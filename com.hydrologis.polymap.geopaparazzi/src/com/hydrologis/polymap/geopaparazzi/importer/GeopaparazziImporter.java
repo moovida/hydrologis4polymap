@@ -39,7 +39,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Sets;
 import com.hydrologis.polymap.geopaparazzi.GeopaparazziPlugin;
 import com.hydrologis.polymap.geopaparazzi.Messages;
-import com.hydrologis.polymap.geopaparazzi.catalog.GeopaparazziProjectServiceResolver;
+import com.hydrologis.polymap.geopaparazzi.catalog.GPServiceResolver;
 
 import org.eclipse.swt.widgets.Composite;
 
@@ -273,10 +273,7 @@ public class GeopaparazziImporter
         }
 
         // create catalog entry
-        try (
-                Updater update = P4Plugin.localCatalog().prepareUpdate()
-                
-                ) {
+        try (Updater update = P4Plugin.localCatalog().prepareUpdate()) {
             update.newEntry( metadata -> {
                 String title = "...";
                 String description = "...";
@@ -292,7 +289,7 @@ public class GeopaparazziImporter
                 String tableName = "...";
                 
                 // actual connection to the data source; just an example
-                metadata.setConnectionParams( GeopaparazziProjectServiceResolver.createParams( geopapDatabaseFile.getAbsolutePath(), tableName ) );
+                metadata.setConnectionParams( GPServiceResolver.createParams( geopapDatabaseFile.getAbsolutePath() ) );
 
                 // resolve the new data source, testing the connection params
                 // and choose resource to create a new layer for

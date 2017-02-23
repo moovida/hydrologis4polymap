@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2016, the @authors. All rights reserved.
+ * Copyright (C) 2017, the @authors. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -20,14 +20,13 @@ import org.polymap.core.catalog.resolve.ResourceResolverProvider;
 /**
  * 
  *
- * @author Andrea Antonello (www.hydrologis.com)
+ * @author Falko Bräutigam
  */
-public class GeopaparazziServiceResolverProvider
+public class GPResolverProvider
         implements ResourceResolverProvider {
 
     @Override
     public IMetadataResourceResolver get() {
-        return new GeopaparazziProjectServiceResolver();
+        return new GPServiceResolver();
     }
-    
 }
