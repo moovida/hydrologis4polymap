@@ -152,7 +152,7 @@ public class GPDataStore
         public SimpleFeatureType getSchema() {
             // XXX GeopaparazziUtilities.getSimpleNotesfeatureType( );
             try {
-                return getFeatures().getSchema();
+                return getFeatures( new Query() ).getSchema();
             }
             catch (IOException e) {
                 throw new RuntimeException( e );

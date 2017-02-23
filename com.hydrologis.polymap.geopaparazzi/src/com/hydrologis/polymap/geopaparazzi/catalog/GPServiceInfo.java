@@ -20,7 +20,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import java.io.File;
-import java.net.URI;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
@@ -58,7 +57,7 @@ public class GPServiceInfo
         this.metadata = metadata;
         Map<String,String> params = metadata.getConnectionParams();
         String url = params.get( IMetadataResourceResolver.CONNECTION_PARAM_URL );
-        File databaseFile = new File( new URI( url ) );
+        File databaseFile = new File( url );
         this.db = new SqliteDb();
         this.db.open( databaseFile.getAbsolutePath() );
         this.ds = new GPDataStore( db );
