@@ -248,13 +248,13 @@ public class GeopaparazziImporter
 
             BatikApplication.instance().getContext().propagate( this );
             NewLayerOperation op = new NewLayerOperation()
-                    .label.put( "New layer" )
+                    .label.put( res.getName() )
                     .res.put( res )
                     .featureStyle.put( featureStyle )
                     .uow.put( ProjectRepository.unitOfWork() )
                     .map.put( map.get() );
 
-            OperationSupport.instance().execute( op, true, false );
+            OperationSupport.instance().execute( op, false, false );
         }
     }
 

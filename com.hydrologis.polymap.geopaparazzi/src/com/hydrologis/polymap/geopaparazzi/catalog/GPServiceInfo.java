@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
+import org.jgrasstools.gears.utils.CrsUtilities;
 import org.opengis.feature.type.Name;
 
 import org.apache.commons.io.FilenameUtils;
@@ -148,9 +149,6 @@ public class GPServiceInfo
 
         @Override
         public ReferencedEnvelope getBounds() {
-            // XXX Auto-generated method stub
-            throw new RuntimeException( "not yet implemented." );
-
 //            try {
 //                ReferencedEnvelope envelope = DaoNotes.getEnvelope( connection );
 //
@@ -166,8 +164,8 @@ public class GPServiceInfo
 //                // XXX Auto-generated catch block
 //
 //            }
-//
-//            return CrsUtilities.WORLD;
+
+            return CrsUtilities.WORLD;
         }
 
         private void expandEnvelope( ReferencedEnvelope envelope, ReferencedEnvelope tmp ) {
