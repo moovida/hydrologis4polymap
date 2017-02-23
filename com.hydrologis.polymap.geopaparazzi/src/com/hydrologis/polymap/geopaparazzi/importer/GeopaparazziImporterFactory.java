@@ -12,12 +12,9 @@
  */
 package com.hydrologis.polymap.geopaparazzi.importer;
 
-import java.util.List;
-
 import java.io.File;
 
-import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
-import org.jgrasstools.gears.io.geopaparazzi.OmsGeopaparazzi4Converter;
+import org.apache.commons.io.FilenameUtils;
 
 import org.polymap.p4.data.importer.ContextIn;
 import org.polymap.p4.data.importer.ImporterFactory;
@@ -36,17 +33,19 @@ public class GeopaparazziImporterFactory
 
     @Override
     public void createImporters( ImporterBuilder builder ) throws Exception {
-        if (geopapDatabaseFile != null) {
+        if (geopapDatabaseFile != null 
+                && FilenameUtils.getExtension( geopapDatabaseFile.getName() ).equals( "gpap" )) {
+  
+            builder.newImporter( new GeopaparazziImporter(), geopapDatabaseFile);
 
-            try (SqliteDb geopaparazziDb = new SqliteDb()) {
-                geopaparazziDb.open( geopapDatabaseFile.getAbsolutePath() );
-
-                List<String> layerNamesList = OmsGeopaparazzi4Converter.getLayerNamesList( geopaparazziDb.getConnection() );
-                for (String layerName : layerNamesList) {
-                    builder.newImporter( new GeopaparazziImporter(), layerName , geopapDatabaseFile);
-                }
-
-            }
+//            try (SqliteDb geopaparazziDb = new SqliteDb()) {
+//                geopaparazziDb.open( geopapDatabaseFile.getAbsolutePath() );
+//
+//                List<String> layerNamesList = OmsGeopaparazzi4Converter.getLayerNamesList( geopaparazziDb.getConnection() );
+//                for (String layerName : layerNamesList) {
+//                    builder.newImporter( new GeopaparazziImporter(), layerName , geopapDatabaseFile);
+//                }
+//            }
         }
     }
 
