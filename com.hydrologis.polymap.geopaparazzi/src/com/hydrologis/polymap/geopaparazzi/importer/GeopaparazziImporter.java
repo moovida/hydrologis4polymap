@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.io.File;
 
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
-import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
@@ -40,6 +39,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Sets;
 import com.hydrologis.polymap.geopaparazzi.GeopaparazziPlugin;
 import com.hydrologis.polymap.geopaparazzi.Messages;
+import com.hydrologis.polymap.geopaparazzi.catalog.GeopaparazziProjectServiceResolver;
 
 import org.eclipse.swt.widgets.Composite;
 
@@ -49,7 +49,6 @@ import org.polymap.core.catalog.IUpdateableMetadataCatalog.Updater;
 import org.polymap.core.catalog.resolve.IMetadataResourceResolver;
 import org.polymap.core.catalog.resolve.IResourceInfo;
 import org.polymap.core.catalog.resolve.IServiceInfo;
-import org.polymap.core.data.shapefile.catalog.ShapefileServiceResolver;
 import org.polymap.core.operation.OperationSupport;
 import org.polymap.core.project.IMap;
 import org.polymap.core.runtime.i18n.IMessages;
@@ -241,7 +240,9 @@ public class GeopaparazziImporter
     public void execute( IProgressMonitor monitor ) throws Exception {
         // no maxResults restriction
 
-        features = schemaNamePrompt.retypeFeatures( (SimpleFeatureCollection)features, layerName );
+        //features = schemaNamePrompt.retypeFeatures( (SimpleFeatureCollection)features, layerName );
+        
+        importCatalogEntry( monitor );
     }
 
 
@@ -260,27 +261,38 @@ public class GeopaparazziImporter
             db.open( geopapDatabaseFile.getAbsolutePath() );
             IJGTConnection connection = db.getConnection();
 
-            GPProgressMonitor pm = new GPProgressMonitor( monitor );
-            SimpleFeatureCollection simpleNotes = OmsGeopaparazzi4Converter.simpleNotes2featurecollection( connection, pm );
+            List<String> layerNamesList = OmsGeopaparazzi4Converter.getLayerNamesList( connection );
+
+//            GPProgressMonitor pm = new GPProgressMonitor( monitor );
+//            SimpleFeatureCollection simpleNotes = OmsGeopaparazzi4Converter.simpleNotes2featurecollection( connection, pm );
+            
+            // XXX What should be done here?
+            
             
             
         }
 
         // create catalog entry
         try (
-                Updater update = P4Plugin.localCatalog().prepareUpdate()) {
+                Updater update = P4Plugin.localCatalog().prepareUpdate()
+                
+                ) {
             update.newEntry( metadata -> {
                 String title = "...";
                 String description = "...";
                 String type = "...";
                 HashSet<String> newHashSet = Sets.newHashSet( "..." );
-                
+
                 metadata.setTitle( title );
                 metadata.setDescription( description );
                 metadata.setType( type );
                 metadata.setFormats( newHashSet );
+                
+                // XXX should this newEntry thing be done for each layer? 
+                String tableName = "...";
+                
                 // actual connection to the data source; just an example
-                metadata.setConnectionParams( ShapefileServiceResolver.createParams( "file://..." ) );
+                metadata.setConnectionParams( GeopaparazziProjectServiceResolver.createParams( geopapDatabaseFile.getAbsolutePath(), tableName ) );
 
                 // resolve the new data source, testing the connection params
                 // and choose resource to create a new layer for

@@ -23,7 +23,7 @@ import java.net.URI;
 import org.geotools.data.ServiceInfo;
 import org.jgrasstools.dbs.compat.IJGTConnection;
 import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
-import org.jgrasstools.gears.io.geopaparazzi.OmsGeopaparazzi4Converter;
+import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
 import org.jgrasstools.gears.utils.files.FileUtilities;
 
 public class GeopaparazziSI
@@ -44,7 +44,7 @@ public class GeopaparazziSI
         dbName = FileUtilities.getNameWithoutExtention( dbFile );
 
         try {
-            metadataMap = OmsGeopaparazzi4Converter.getMetadataMap( connection );
+            metadataMap = GeopaparazziUtilities.getProjectMetadata( connection );
         }
         catch (Exception e) {
             // XXX Auto-generated catch block

@@ -25,7 +25,7 @@ import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.jgrasstools.dbs.compat.IJGTConnection;
 import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
-import org.jgrasstools.gears.io.geopaparazzi.OmsGeopaparazzi4Converter;
+import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
 import org.jgrasstools.gears.io.geopaparazzi.geopap4.DaoGpsLog;
 import org.jgrasstools.gears.io.geopaparazzi.geopap4.DaoImages;
 import org.jgrasstools.gears.io.geopaparazzi.geopap4.DaoNotes;
@@ -53,7 +53,7 @@ public class GeopaparazziResourceInfo
         dbName = FileUtilities.getNameWithoutExtention( dbFile );
 
         try {
-            metadataMap = OmsGeopaparazzi4Converter.getMetadataMap( connection );
+            metadataMap = GeopaparazziUtilities.getProjectMetadata( connection );
         }
         catch (Exception e) {
             // XXX Auto-generated catch block

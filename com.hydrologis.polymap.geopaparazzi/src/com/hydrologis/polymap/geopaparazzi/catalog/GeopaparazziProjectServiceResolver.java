@@ -65,10 +65,11 @@ public class GeopaparazziProjectServiceResolver
     }
 
 
-    public static Map<String,String> createParams( String serviceUrl ) {
+    public static Map<String,String> createParams( String serviceUrl, String tableName ) {
         Map<String,String> result = new HashMap();
         result.put( CONNECTION_PARAM_TYPE, CONNECTION_TYPE );
         result.put( CONNECTION_PARAM_URL, serviceUrl );
+        result.put( LAYER_NAME, tableName );
         return result;
     }
 

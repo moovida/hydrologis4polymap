@@ -72,6 +72,9 @@ public class GeopaparazziServiceInfo
 
     @Override
     public Iterable<IResourceInfo> getResources( IProgressMonitor monitor ) throws Exception {
+        
+        
+        
         ResourceInfo info = new GeopaparazziResourceInfo( ds );
         return Collections.singletonList( new GeopaparazziProjectResourceInfo( this, info ) );
     }
