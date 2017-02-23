@@ -1,16 +1,14 @@
-/* 
- * polymap.org
- * Copyright (C) 2015, Falko Bräutigam. All rights reserved.
+/*
+ * polymap.org Copyright (C) 2015, Falko Bräutigam. All rights reserved.
  *
- * This is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 3.0 of
- * the License, or (at your option) any later version.
+ * This is free software; you can redistribute it and/or modify it under the terms of
+ * the GNU Lesser General Public License as published by the Free Software
+ * Foundation; either version 3.0 of the License, or (at your option) any later
+ * version.
  *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ * This software is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
  */
 package com.hydrologis.polymap.geopaparazzi.catalog;
 
@@ -22,14 +20,18 @@ import java.util.Set;
 import java.io.File;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.jgrasstools.dbs.compat.IJGTConnection;
 import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
-import org.jgrasstools.gears.utils.CrsUtilities;
+import org.jgrasstools.gears.io.geopaparazzi.geopap4.DaoGpsLog;
+import org.jgrasstools.gears.io.geopaparazzi.geopap4.DaoImages;
+import org.jgrasstools.gears.io.geopaparazzi.geopap4.DaoNotes;
 import org.opengis.feature.type.Name;
 
 import org.apache.commons.io.FilenameUtils;
 
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Sets;
+import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
@@ -47,11 +49,11 @@ import org.polymap.core.catalog.resolve.IServiceInfo;
 public class GPServiceInfo
         implements IServiceInfo {
 
-    private IMetadata           metadata;
+    private IMetadata   metadata;
 
-    private SqliteDb            db;
-    
-    private GPDataStore         ds;
+    private SqliteDb    db;
+
+    private GPDataStore ds;
 
 
     protected GPServiceInfo( IMetadata metadata ) throws Exception {
@@ -64,7 +66,7 @@ public class GPServiceInfo
         this.ds = new GPDataStore( db );
     }
 
-    
+
     @Override
     public <T> T createService( IProgressMonitor monitor ) throws Exception {
         return (T)new GPDataStore( db );
@@ -73,17 +75,16 @@ public class GPServiceInfo
 
     @Override
     public Iterable<IResourceInfo> getResources( IProgressMonitor monitor ) throws Exception {
-        return FluentIterable.from( ds.getNames() )
-                .transform( name -> new GPResourceInfo( name ) );
+        return FluentIterable.from( ds.getNames() ).transform( name -> new GPResourceInfo( name ) );
     }
 
-    
+
     @Override
     public String getTitle() {
         return FilenameUtils.getBaseName( db.getDatabasePath() );
     }
 
-    
+
     @Override
     public Set<String> getKeywords() {
         return Sets.newHashSet( "Geopaparazzi", "Digital Field Mapping" );
@@ -94,12 +95,13 @@ public class GPServiceInfo
     public Optional<String> getDescription() {
         // XXX
         return Optional.empty();
-        
-//        StringBuilder sb = new StringBuilder();
-//        for (Entry<String,String> entry : metadataMap.entrySet()) {
-//            sb.append( entry.getKey() ).append( "=" ).append( entry.getValue() ).append( "\n" );
-//        }
-//        return sb.toString();
+
+        // StringBuilder sb = new StringBuilder();
+        // for (Entry<String,String> entry : metadataMap.entrySet()) {
+        // sb.append( entry.getKey() ).append( "=" ).append( entry.getValue()
+        // ).append( "\n" );
+        // }
+        // return sb.toString();
     }
 
 
@@ -121,52 +123,61 @@ public class GPServiceInfo
     class GPResourceInfo
             implements IResourceInfo {
 
-        private Name            name;
+        private Name name;
+
 
         public GPResourceInfo( Name name ) {
             this.name = name;
         }
+
 
         @Override
         public String getName() {
             return name.getLocalPart();
         }
 
+
         @Override
         public String getTitle() {
             return name.getLocalPart();
         }
+
 
         @Override
         public Set<String> getKeywords() {
             return Collections.EMPTY_SET;
         }
 
+
         @Override
         public Optional<String> getDescription() {
             return Optional.empty();
         }
 
+
         @Override
         public ReferencedEnvelope getBounds() {
-//            try {
-//                ReferencedEnvelope envelope = DaoNotes.getEnvelope( connection );
-//
-//                ReferencedEnvelope tmp = DaoImages.getEnvelope( connection );
-//                expandEnvelope( envelope, tmp );
-//
-//                tmp = DaoGpsLog.getEnvelope( connection );
-//                expandEnvelope( envelope, tmp );
-//
-//                return envelope;
-//            }
-//            catch (Exception e) {
-//                // XXX Auto-generated catch block
-//
-//            }
+            try {
+                IJGTConnection connection = db.getConnection();
 
-            return CrsUtilities.WORLD;
+                ReferencedEnvelope envelope = DaoNotes.getEnvelope( connection, null );
+
+                ReferencedEnvelope tmp = DaoImages.getEnvelope( connection );
+                expandEnvelope( envelope, tmp );
+
+                tmp = DaoGpsLog.getEnvelope( connection );
+                expandEnvelope( envelope, tmp );
+
+                return envelope;
+            }
+            catch (Exception e) {
+                // XXX Auto-generated catch block
+
+            }
+
+            return GPUtilities.WORLD;
         }
+
 
         private void expandEnvelope( ReferencedEnvelope envelope, ReferencedEnvelope tmp ) {
             if (tmp != null) {
@@ -179,11 +190,12 @@ public class GPServiceInfo
             }
         }
 
+
         @Override
         public IServiceInfo getServiceInfo() {
             return GPServiceInfo.this;
         }
-    
+
     }
-    
+
 }

@@ -23,20 +23,24 @@ import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
 import org.jgrasstools.gears.utils.files.FileUtilities;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 import com.hydrologis.polymap.geopaparazzi.GeopaparazziPlugin;
 import com.hydrologis.polymap.geopaparazzi.Messages;
 import com.hydrologis.polymap.geopaparazzi.catalog.GPDataStore;
 import com.hydrologis.polymap.geopaparazzi.catalog.GPServiceInfo;
 import com.hydrologis.polymap.geopaparazzi.catalog.GPServiceResolver;
-import com.hydrologis.polymap.geopaparazzi.utilities.StyleUtilities;
+import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Text;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
@@ -65,6 +69,8 @@ import org.polymap.p4.P4Plugin;
 import org.polymap.p4.catalog.AllResolver;
 import org.polymap.p4.data.importer.ContextIn;
 import org.polymap.p4.data.importer.Importer;
+import org.polymap.p4.data.importer.ImporterPrompt;
+import org.polymap.p4.data.importer.ImporterPrompt.PromptUIBuilder;
 import org.polymap.p4.data.importer.ImporterSite;
 import org.polymap.p4.layer.NewLayerOperation;
 import org.polymap.p4.project.ProjectRepository;
@@ -97,6 +103,8 @@ public class GeopaparazziImporter
 
     private Composite              tableParent;
 
+    private String                 promptSelection;
+
 
     @Override
     public ImporterSite site() {
@@ -114,6 +122,8 @@ public class GeopaparazziImporter
             site.description.set( i18n.get( "description" ) );
             site.terminal.set( true );
             site.icon.set( GeopaparazziPlugin.images().svgImage( "gpap.svg", SvgImageRegistryHelper.NORMAL24 ) );
+
+            promptSelection = geopapDatabaseFile.getName();
         }
         catch (Exception e) {
             // FIXME ???
@@ -124,6 +134,11 @@ public class GeopaparazziImporter
 
     @Override
     public void createPrompts( IProgressMonitor monitor ) throws Exception {
+
+        // site.newPrompt( "schemaName" ).summary.put( i18n.get( "summary" )
+        // ).description.put( i18n.get( "description" ) ).value.put( promptSelection
+        // ).severity.put( Severity.REQUIRED ).ok.put( canCopyFile( false )
+        // ).extendedUI.put( new TextUIBuilder() );
     }
 
 
@@ -203,7 +218,22 @@ public class GeopaparazziImporter
 
     @Override
     public void execute( IProgressMonitor monitor ) throws Exception {
+        canCopyFile( true );
+
         importCatalogEntry( monitor );
+    }
+
+
+    private boolean canCopyFile( boolean alsoCopy ) throws IOException {
+        File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
+        String name = geopapDatabaseFile.getName();
+        File newFile = new File( gpapProjectsFolder, name );
+        if (newFile.exists()) {
+            return false;
+        }
+        if (alsoCopy)
+            Files.copy( geopapDatabaseFile, newFile );
+        return true;
     }
 
 
@@ -225,7 +255,7 @@ public class GeopaparazziImporter
                     String databasePath = db.getDatabasePath();
                     String title = FileUtilities.getNameWithoutExtention( new File( databasePath ) );
                     String projectInfo = "Geopaparazzi Project";
-                    projectInfo = GeopaparazziUtilities.getProjectInfo( db.getConnection() );
+                    projectInfo = GeopaparazziUtilities.getProjectInfo( db.getConnection(), false );
 
                     metadata.setTitle( title );
                     metadata.setDescription( projectInfo );
@@ -254,7 +284,7 @@ public class GeopaparazziImporter
         for (IResourceInfo res : serviceInfo.get().getResources( monitor )) {
             String name = res.getName();
 
-            FeatureStyle featureStyle4Layer = StyleUtilities.getFeatureStyle4Layer( name, db.getConnection() );
+            FeatureStyle featureStyle4Layer = GPUtilities.getFeatureStyle4Layer( name, db.getConnection() );
             if (featureStyle4Layer == null) {
                 featureStyle4Layer = P4Plugin.styleRepo().newFeatureStyle();
                 DefaultStyle.createAllStyles( featureStyle4Layer );
@@ -272,4 +302,62 @@ public class GeopaparazziImporter
     @Scope( P4Plugin.Scope )
     protected Context<IMap> map;
 
+
+    class TextUIBuilder
+            implements PromptUIBuilder {
+
+        @Override
+        public void submit( ImporterPrompt prompt ) {
+            try {
+                prompt.ok.set( canCopyFile( false ) );
+                prompt.value.put( promptSelection );
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        @Override
+        public void createContents( ImporterPrompt prompt, Composite parent, IPanelToolkit tk ) {
+            parent.setLayout( FormLayoutFactory.defaults().spacing( 5 ).create() );
+            Label desc = tk.createLabel( parent, prompt.description.get(), SWT.WRAP );
+            Label l = tk.createLabel( parent, "", SWT.WRAP );
+
+            Text text = tk.createText( parent, promptSelection, SWT.BORDER );
+            text.addModifyListener( ev -> {
+                promptSelection = ((Text)ev.getSource()).getText();
+                checkName( prompt, l );
+            } );
+            text.forceFocus();
+
+            FormDataFactory.on( desc ).fill().noBottom().width( DEFAULT_WIDTH ).control();
+            FormDataFactory.on( text ).fill().top( desc, 10 ).noBottom().width( DEFAULT_WIDTH );
+            FormDataFactory.on( l ).fill().top( text ).width( DEFAULT_WIDTH );
+
+            checkName( prompt, l );
+        }
+
+
+        protected void checkName( ImporterPrompt prompt, Label l ) {
+            try {
+                if (StringUtils.isBlank( promptSelection )) {
+                    l.setText( "No name set" );
+                    // prompt.ok.set( false );
+                }
+                else if (!canCopyFile( false )) {
+                    l.setText( "Can't use existing file name." );
+                    // prompt.ok.set( false );
+                }
+                else {
+                    l.setText( "File name is ok." );
+                    // prompt.ok.set( true );
+                }
+            }
+            catch (IOException e) {
+                // XXX Auto-generated catch block
+                l.setText( "An error occurred: " + e.getLocalizedMessage() );
+            }
+        }
+    }
 }

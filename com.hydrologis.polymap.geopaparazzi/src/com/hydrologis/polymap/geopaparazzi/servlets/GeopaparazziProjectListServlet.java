@@ -26,9 +26,7 @@ import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.hydrologis.polymap.geopaparazzi.GeopaparazziPlugin;
-
-import org.polymap.core.CorePlugin;
+import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 
 public class GeopaparazziProjectListServlet
         extends HttpServlet {
@@ -55,7 +53,7 @@ public class GeopaparazziProjectListServlet
         // StageWorkspace.getInstance().getGeopaparazziFolder(userPwd[0]);
 
         // TODO change this to be more solid and separated for users
-        File gpapProjectsFolder = CorePlugin.getDataLocation( GeopaparazziPlugin.instance() );
+        File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
         response.setContentType( "text/json" );
         PrintWriter out = response.getWriter();
         String projectsList = GeopaparazziUtilities.loadProjectsList( gpapProjectsFolder );

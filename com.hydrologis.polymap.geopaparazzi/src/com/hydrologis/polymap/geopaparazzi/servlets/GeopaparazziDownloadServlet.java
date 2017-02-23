@@ -28,9 +28,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.hydrologis.polymap.geopaparazzi.GeopaparazziPlugin;
-
-import org.polymap.core.CorePlugin;
+import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 
 public class GeopaparazziDownloadServlet
         extends HttpServlet {
@@ -57,7 +55,7 @@ public class GeopaparazziDownloadServlet
         // StageWorkspace.getInstance().getGeopaparazziFolder(userPwd[0]);
 
         // TODO change this to be more solid and separated for users
-        File gpapProjectsFolder = CorePlugin.getDataLocation( GeopaparazziPlugin.instance() );
+        File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
 
         String projectFileName = "";
         FileInputStream inputStream = null;
