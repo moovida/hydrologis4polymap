@@ -15,6 +15,16 @@
             class="com.hydrologis.polymap.geopaparazzi.servlets.GeopaparazziUploadServlet"
             load-on-startup="true">
       </servlet>
+      <servlet
+            alias="/stage_gplist_download"
+            class="com.hydrologis.polymap.geopaparazzi.servlets.GeopaparazziProjectListServlet"
+            load-on-startup="true">
+      </servlet>
+      <servlet
+            alias="/stage_gpproject_download"
+            class="com.hydrologis.polymap.geopaparazzi.servlets.GeopaparazziDownloadServlet"
+            load-on-startup="true">
+      </servlet>
    </extension>
 
 </plugin>
