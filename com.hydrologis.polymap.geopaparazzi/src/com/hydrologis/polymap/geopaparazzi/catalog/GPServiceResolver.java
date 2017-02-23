@@ -44,7 +44,7 @@ public class GPServiceResolver
     
     @Override
     public IResolvableInfo resolve( IMetadata metadata, IProgressMonitor monitor ) throws Exception {
-        return GPServiceInfo.of( metadata, metadata.getConnectionParams() );
+        return new GPServiceInfo( metadata );
     }
 
     

@@ -15,29 +15,25 @@
 package com.hydrologis.polymap.geopaparazzi.catalog;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 
-import org.geotools.data.ResourceInfo;
-import org.geotools.data.shapefile.ShapefileDataStore;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.ows.ServiceException;
-import org.jgrasstools.dbs.compat.IJGTConnection;
+import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
-import org.jgrasstools.gears.io.geopaparazzi.OmsGeopaparazzi4Converter;
+import org.opengis.feature.type.Name;
 
-import com.hydrologis.polymap.geopaparazzi.importer.GPProgressMonitor;
+import org.apache.commons.io.FilenameUtils;
+
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Sets;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.polymap.core.catalog.IMetadata;
-import org.polymap.core.catalog.resolve.DefaultResourceInfo;
-import org.polymap.core.catalog.resolve.DefaultServiceInfo;
 import org.polymap.core.catalog.resolve.IMetadataResourceResolver;
 import org.polymap.core.catalog.resolve.IResourceInfo;
 import org.polymap.core.catalog.resolve.IServiceInfo;
@@ -47,73 +43,150 @@ import org.polymap.core.catalog.resolve.IServiceInfo;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
+@SuppressWarnings( "deprecation" )
 public class GPServiceInfo
-        extends DefaultServiceInfo {
+        implements IServiceInfo {
 
-    public static GPServiceInfo of( IMetadata metadata, Map<String,String> params ) 
-            throws ServiceException, MalformedURLException, IOException {
-        
+    private IMetadata           metadata;
+
+    private SqliteDb            db;
+    
+    private GPDataStore         ds;
+
+
+    protected GPServiceInfo( IMetadata metadata ) throws Exception {
+        this.metadata = metadata;
+        Map<String,String> params = metadata.getConnectionParams();
         String url = params.get( IMetadataResourceResolver.CONNECTION_PARAM_URL );
         File databaseFile = new File( new URI( url ) );
-        try (SqliteDb db = new SqliteDb()) {
-            db.open( databaseFile.getAbsolutePath() );
-            IJGTConnection connection = db.getConnection();
-
-            GPProgressMonitor pm = new GPProgressMonitor( monitor );
-            switch (layerName) {
-                case OmsGeopaparazzi4Converter.SIMPLE_NOTES:
-                    features = OmsGeopaparazzi4Converter.simpleNotes2featurecollection( connection, pm );
-                    break;
-                case OmsGeopaparazzi4Converter.GPS_LOGS:
-                    List<GpsLog> gpsLogsList = OmsGeopaparazzi4Converter.getGpsLogsList( connection );
-                    features = OmsGeopaparazzi4Converter.getLogLinesFeatureCollection( pm, gpsLogsList );
-                    break;
-                case OmsGeopaparazzi4Converter.MEDIA_NOTES:
-                    features = OmsGeopaparazzi4Converter.media2IdBasedFeatureCollection( connection, pm );
-                    break;
-                default:
-                    HashMap<String,SimpleFeatureCollection> complexNotesMap = OmsGeopaparazzi4Converter.complexNotes2featurecollections( connection, pm );
-                    features = complexNotesMap.get( layerName );
-                    break;
-            }
-
-        }
-
-        return new GPServiceInfo( metadata, ds );
-    }
-
-
-    // instance *******************************************
-    
-    protected GPServiceInfo( IMetadata metadata, ShapefileDataStore ds ) {
-        super( metadata, ds.getInfo() );
-        this.ds = ds;
+        this.db = new SqliteDb();
+        this.db.open( databaseFile.getAbsolutePath() );
+        this.ds = new GPDataStore( db );
     }
 
     
     @Override
     public <T> T createService( IProgressMonitor monitor ) throws Exception {
-        return (T)ds;
+        return (T)new GPDataStore( db );
     }
 
 
     @Override
     public Iterable<IResourceInfo> getResources( IProgressMonitor monitor ) throws Exception {
-        ResourceInfo info = ds.getFeatureSource().getInfo();
-        return Collections.singletonList( new ShapefileResourceInfo( this, info ) );
+        return FluentIterable.from( ds.getNames() )
+                .transform( name -> new GPResourceInfo( name ) );
     }
 
     
+    @Override
+    public String getTitle() {
+        return FilenameUtils.getBaseName( db.getDatabasePath() );
+    }
+
+    
+    @Override
+    public Set<String> getKeywords() {
+        return Sets.newHashSet( "Geopaparazzi", "Digital Field Mapping" );
+    }
+
+
+    @Override
+    public Optional<String> getDescription() {
+        // XXX
+        return Optional.empty();
+        
+//        StringBuilder sb = new StringBuilder();
+//        for (Entry<String,String> entry : metadataMap.entrySet()) {
+//            sb.append( entry.getKey() ).append( "=" ).append( entry.getValue() ).append( "\n" );
+//        }
+//        return sb.toString();
+    }
+
+
+    @Override
+    public IMetadata getMetadata() {
+        return metadata;
+    }
+
+
+    @Override
+    public IServiceInfo getServiceInfo() {
+        return this;
+    }
+
+
     /**
      * 
      */
-    class ShapefileResourceInfo
-            extends DefaultResourceInfo {
+    class GPResourceInfo
+            implements IResourceInfo {
 
-        public ShapefileResourceInfo( IServiceInfo serviceInfo, ResourceInfo delegate ) {
-            super( serviceInfo, delegate );
+        private Name            name;
+
+        public GPResourceInfo( Name name ) {
+            this.name = name;
         }
-        
+
+        @Override
+        public String getName() {
+            return name.getLocalPart();
+        }
+
+        @Override
+        public String getTitle() {
+            return name.getLocalPart();
+        }
+
+        @Override
+        public Set<String> getKeywords() {
+            return Collections.EMPTY_SET;
+        }
+
+        @Override
+        public Optional<String> getDescription() {
+            return Optional.empty();
+        }
+
+        @Override
+        public ReferencedEnvelope getBounds() {
+            // XXX Auto-generated method stub
+            throw new RuntimeException( "not yet implemented." );
+
+//            try {
+//                ReferencedEnvelope envelope = DaoNotes.getEnvelope( connection );
+//
+//                ReferencedEnvelope tmp = DaoImages.getEnvelope( connection );
+//                expandEnvelope( envelope, tmp );
+//
+//                tmp = DaoGpsLog.getEnvelope( connection );
+//                expandEnvelope( envelope, tmp );
+//
+//                return envelope;
+//            }
+//            catch (Exception e) {
+//                // XXX Auto-generated catch block
+//
+//            }
+//
+//            return CrsUtilities.WORLD;
+        }
+
+        private void expandEnvelope( ReferencedEnvelope envelope, ReferencedEnvelope tmp ) {
+            if (tmp != null) {
+                if (envelope != null) {
+                    envelope.expandToInclude( tmp );
+                }
+                else {
+                    envelope = tmp;
+                }
+            }
+        }
+
+        @Override
+        public IServiceInfo getServiceInfo() {
+            return GPServiceInfo.this;
+        }
+    
     }
     
 }
