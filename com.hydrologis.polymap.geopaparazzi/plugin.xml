@@ -16,5 +16,11 @@
             load-on-startup="true">
       </servlet>
    </extension>
+   <extension
+         point="org.polymap.core.catalog.resolverProviders">
+      <resolver
+            class="com.hydrologis.polymap.geopaparazzi.catalog.GPResolverProvider">
+      </resolver>
+   </extension>
 
 </plugin>
