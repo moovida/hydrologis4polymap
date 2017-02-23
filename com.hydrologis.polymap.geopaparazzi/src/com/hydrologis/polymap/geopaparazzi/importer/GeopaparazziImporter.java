@@ -19,6 +19,8 @@ import java.io.IOException;
 
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
+import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
+import org.jgrasstools.gears.utils.files.FileUtilities;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.logging.Log;
@@ -30,6 +32,7 @@ import com.hydrologis.polymap.geopaparazzi.Messages;
 import com.hydrologis.polymap.geopaparazzi.catalog.GPDataStore;
 import com.hydrologis.polymap.geopaparazzi.catalog.GPServiceInfo;
 import com.hydrologis.polymap.geopaparazzi.catalog.GPServiceResolver;
+import com.hydrologis.polymap.geopaparazzi.utilities.StyleUtilities;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Combo;
@@ -135,7 +138,7 @@ public class GeopaparazziImporter
             log.info( "Tables: " + db.getTables( false ) );
             ds = new GPDataStore( db );
             log.info( "Resources: " + ds.getNames() );
-            
+
             site.ok.set( true );
             exception = null;
         }
@@ -155,26 +158,27 @@ public class GeopaparazziImporter
         else {
             try {
                 parent.setLayout( FormLayoutFactory.defaults().spacing( 5 ).create() );
-                Combo combo = new Combo( parent, SWT.READ_ONLY|SWT.DROP_DOWN );
+                Combo combo = new Combo( parent, SWT.READ_ONLY | SWT.DROP_DOWN );
                 FormDataFactory.on( combo ).fill().noBottom();
                 combo.setFont( UIUtils.bold( combo.getFont() ) );
                 combo.setItems( ds.getTypeNames() );
                 combo.addSelectionListener( UIUtils.selectionListener( ev -> {
                     try {
-                        String typeName = ds.getTypeNames()[ combo.getSelectionIndex() ];
+                        String typeName = ds.getTypeNames()[combo.getSelectionIndex()];
                         createFeatureTable( tableParent, typeName );
                     }
                     catch (Exception e) {
-                        tk.createFlowText( parent, "\nUnable to read the data.\n\n**Reason**: " + exception.getMessage() );
+                        tk.createFlowText( parent, "\nUnable to read the data.\n\n**Reason**: "
+                                + exception.getMessage() );
                         site.ok.set( false );
                         exception = e;
-                    }        
-                }));
+                    }
+                } ) );
                 combo.select( 0 );
 
                 tableParent = tk.createComposite( parent );
                 FormDataFactory.on( tableParent ).fill().top( combo );
-                
+
                 String typeName = ds.getTypeNames()[0];
                 createFeatureTable( tableParent, typeName );
             }
@@ -182,11 +186,11 @@ public class GeopaparazziImporter
                 tk.createFlowText( parent, "\nUnable to read the data.\n\n**Reason**: " + exception.getMessage() );
                 site.ok.set( false );
                 exception = e;
-            }        
+            }
         }
     }
 
-    
+
     protected void createFeatureTable( Composite parent, String typeName ) throws IOException {
         UIUtils.disposeChildren( parent );
         SimpleFeatureSource fs = ds.getFeatureSource( typeName );
@@ -196,7 +200,7 @@ public class GeopaparazziImporter
         parent.layout();
     }
 
-    
+
     @Override
     public void execute( IProgressMonitor monitor ) throws Exception {
         importCatalogEntry( monitor );
@@ -217,23 +221,29 @@ public class GeopaparazziImporter
         // create catalog entry
         try (Updater update = P4Plugin.localCatalog().prepareUpdate()) {
             update.newEntry( metadata -> {
-                metadata.setTitle( "Geopaparazzi" );
-                metadata.setDescription( "..." );
-                metadata.setType( "Sqlite" );
-                metadata.setFormats( Sets.newHashSet( "..." ) );
-                
-                // actual connection to the data source; just an example
-                metadata.setConnectionParams( GPServiceResolver.createParams( geopapDatabaseFile.getAbsolutePath() ) );
-
-                // resolve the new data source, testing the connection params
-                // and choose resource to create a new layer for
                 try {
+                    String databasePath = db.getDatabasePath();
+                    String title = FileUtilities.getNameWithoutExtention( new File( databasePath ) );
+                    String projectInfo = "Geopaparazzi Project";
+                    projectInfo = GeopaparazziUtilities.getProjectInfo( db.getConnection() );
+
+                    metadata.setTitle( title );
+                    metadata.setDescription( projectInfo );
+                    metadata.setType( "Geopaparazzi Sqlite Project Database" );
+                    metadata.setFormats( Sets.newHashSet( "..." ) );
+
+                    // actual connection to the data source; just an example
+                    metadata.setConnectionParams( GPServiceResolver.createParams( geopapDatabaseFile.getAbsolutePath() ) );
+
+                    // resolve the new data source, testing the connection params
+                    // and choose resource to create a new layer for
+
                     serviceInfo.set( (GPServiceInfo)AllResolver.instance().resolve( metadata, monitor ) );
                 }
                 catch (Exception e) {
                     throw new RuntimeException( "Unable to resolve imported data source.", e );
                 }
-            });
+            } );
             update.commit();
         }
         catch (Exception e) {
@@ -242,23 +252,21 @@ public class GeopaparazziImporter
 
         // create new layer(s) for resource(s)
         for (IResourceInfo res : serviceInfo.get().getResources( monitor )) {
-            // XXX call StyleUtilities here
-            FeatureStyle featureStyle = P4Plugin.styleRepo().newFeatureStyle();
-            DefaultStyle.createAllStyles( featureStyle );
+            String name = res.getName();
+
+            FeatureStyle featureStyle4Layer = StyleUtilities.getFeatureStyle4Layer( name, db.getConnection() );
+            if (featureStyle4Layer == null) {
+                featureStyle4Layer = P4Plugin.styleRepo().newFeatureStyle();
+                DefaultStyle.createAllStyles( featureStyle4Layer );
+            }
 
             BatikApplication.instance().getContext().propagate( this );
-            NewLayerOperation op = new NewLayerOperation()
-                    .label.put( res.getName() )
-                    .res.put( res )
-                    .featureStyle.put( featureStyle )
-                    .uow.put( ProjectRepository.unitOfWork() )
-                    .map.put( map.get() );
+            NewLayerOperation op = new NewLayerOperation().label.put( name ).res.put( res ).featureStyle.put( featureStyle4Layer ).uow.put( ProjectRepository.unitOfWork() ).map.put( map.get() );
 
             OperationSupport.instance().execute( op, false, false );
         }
     }
 
-    
     /** Only required for {@link #importCatalogEntry()}. */
     @Mandatory
     @Scope( P4Plugin.Scope )
