@@ -12,8 +12,9 @@
  */
 package com.hydrologis.polymap.geopaparazzi.importer;
 
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import java.io.File;
 
@@ -29,11 +30,14 @@ import org.jgrasstools.gears.io.geopaparazzi.OmsGeopaparazzi4Converter;
 import org.jgrasstools.gears.io.geopaparazzi.geopap4.DaoGpsLog.GpsLog;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.FeatureType;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Sets;
 import com.hydrologis.polymap.geopaparazzi.GeopaparazziPlugin;
 import com.hydrologis.polymap.geopaparazzi.Messages;
 
@@ -41,18 +45,35 @@ import org.eclipse.swt.widgets.Composite;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
+import org.polymap.core.catalog.IUpdateableMetadataCatalog.Updater;
+import org.polymap.core.catalog.resolve.IMetadataResourceResolver;
+import org.polymap.core.catalog.resolve.IResourceInfo;
+import org.polymap.core.catalog.resolve.IServiceInfo;
+import org.polymap.core.data.shapefile.catalog.ShapefileServiceResolver;
+import org.polymap.core.operation.OperationSupport;
+import org.polymap.core.project.IMap;
 import org.polymap.core.runtime.i18n.IMessages;
+import org.polymap.core.style.DefaultStyle;
+import org.polymap.core.style.model.FeatureStyle;
 
+import org.polymap.rhei.batik.BatikApplication;
+import org.polymap.rhei.batik.Context;
+import org.polymap.rhei.batik.Mandatory;
+import org.polymap.rhei.batik.Scope;
 import org.polymap.rhei.batik.app.SvgImageRegistryHelper;
 import org.polymap.rhei.batik.toolkit.IPanelToolkit;
 import org.polymap.rhei.table.FeatureCollectionContentProvider;
 
+import org.polymap.p4.P4Plugin;
+import org.polymap.p4.catalog.AllResolver;
 import org.polymap.p4.data.importer.ContextIn;
 import org.polymap.p4.data.importer.ContextOut;
 import org.polymap.p4.data.importer.Importer;
 import org.polymap.p4.data.importer.ImporterSite;
 import org.polymap.p4.data.importer.prompts.CrsPrompt;
 import org.polymap.p4.data.importer.prompts.SchemaNamePrompt;
+import org.polymap.p4.layer.NewLayerOperation;
+import org.polymap.p4.project.ProjectRepository;
 
 /**
  * 
@@ -99,7 +120,13 @@ public class GeopaparazziImporter
     public void init( ImporterSite site, IProgressMonitor monitor ) {
         this.site = site;
 
-        site.icon.set( GeopaparazziPlugin.images().svgImage( "gpap.svg", SvgImageRegistryHelper.NORMAL24 ) );
+        try {
+            site.icon.set( GeopaparazziPlugin.images().svgImage( "gpap.svg", SvgImageRegistryHelper.NORMAL24 ) );
+        }
+        catch (Exception e) {
+            // XXX Auto-generated catch block
+
+        }
         site.summary.set( i18n.get( "summary", layerName ) );
         site.description.set( i18n.get( "description" ) );
         site.terminal.set( true );
@@ -150,8 +177,7 @@ public class GeopaparazziImporter
                         features = OmsGeopaparazzi4Converter.media2IdBasedFeatureCollection( connection, pm );
                         break;
                     default:
-                        HashMap<String,SimpleFeatureCollection> complexNotesMap = OmsGeopaparazzi4Converter.complexNotes2featurecollections( connection, pm );
-                        features = complexNotesMap.get( layerName );
+                        features = OmsGeopaparazzi4Converter.complexNote2featurecollection( layerName, connection, pm );
                         break;
                 }
 
@@ -217,5 +243,75 @@ public class GeopaparazziImporter
 
         features = schemaNamePrompt.retypeFeatures( (SimpleFeatureCollection)features, layerName );
     }
+
+
+    /**
+     * Directly link a data source represented by an {@link IServiceInfo} and
+     * connected by an {@link IMetadataResourceResolver} to the local catalog. No
+     * data is actually transfered.
+     * 
+     * @throws Exception
+     */
+    protected void importCatalogEntry( IProgressMonitor monitor ) throws Exception {
+        // just an example, wherever this comes from
+        AtomicReference<IResourceInfo> resource = new AtomicReference();
+
+        try (SqliteDb db = new SqliteDb()) {
+            db.open( geopapDatabaseFile.getAbsolutePath() );
+            IJGTConnection connection = db.getConnection();
+
+            GPProgressMonitor pm = new GPProgressMonitor( monitor );
+            SimpleFeatureCollection simpleNotes = OmsGeopaparazzi4Converter.simpleNotes2featurecollection( connection, pm );
+            
+            
+        }
+
+        // create catalog entry
+        try (
+                Updater update = P4Plugin.localCatalog().prepareUpdate()) {
+            update.newEntry( metadata -> {
+                String title = "...";
+                String description = "...";
+                String type = "...";
+                HashSet<String> newHashSet = Sets.newHashSet( "..." );
+                
+                metadata.setTitle( title );
+                metadata.setDescription( description );
+                metadata.setType( type );
+                metadata.setFormats( newHashSet );
+                // actual connection to the data source; just an example
+                metadata.setConnectionParams( ShapefileServiceResolver.createParams( "file://..." ) );
+
+                // resolve the new data source, testing the connection params
+                // and choose resource to create a new layer for
+                try {
+                    IServiceInfo serviceInfo = (IServiceInfo)AllResolver.instance().resolve( metadata, monitor );
+                    resource.set( FluentIterable.from( serviceInfo.getResources( monitor ) ).first().get() );
+                }
+                catch (Exception e) {
+                    throw new RuntimeException( "Unable to resolve imported data source.", e );
+                }
+            } );
+            update.commit();
+        }
+        catch (Exception e) {
+            throw new RuntimeException( e );
+        }
+
+        // create new layer(s) for resource(s)
+        FeatureType schema = null;
+        FeatureStyle featureStyle = P4Plugin.styleRepo().newFeatureStyle();
+        DefaultStyle.create( featureStyle, schema );
+
+        BatikApplication.instance().getContext().propagate( this );
+        NewLayerOperation op = new NewLayerOperation().label.put( "New layer" ).res.put( resource.get() ).featureStyle.put( featureStyle ).uow.put( ProjectRepository.unitOfWork() ).map.put( map.get() );
+
+        OperationSupport.instance().execute( op, true, false );
+    }
+
+    /** Only required for {@link #importCatalogEntry()}. */
+    @Mandatory
+    @Scope( P4Plugin.Scope )
+    protected Context<IMap> map;
 
 }
