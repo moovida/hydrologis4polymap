@@ -181,7 +181,7 @@ public class GeopaparazziUploadServlet
                 // create ILayer entity
                 uow.createEntity( ILayer.class, null, (ILayer proto) -> {
                     proto.label.set( name );
-                    proto.description.set( "Andrea, please put something in here :)" );
+                    proto.description.set( "Geopaparazzi Project Layer" );
                     proto.resourceIdentifier.set( AllResolver.resourceIdentifier( res ) );
                     proto.styleIdentifier.set( featureStyle4Layer.id() );
                     proto.parentMap.set( map );
