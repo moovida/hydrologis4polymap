@@ -196,10 +196,11 @@ public class GPDataStore
     }
 
 
-    // @Override
-    // protected ReferencedEnvelope getBounds( Query query ) throws IOException {
-    // throw new RuntimeException( "not implemented." );
-    // }
+    @Override
+    protected ReferencedEnvelope getBounds( Query query ) throws IOException {
+        throw new RuntimeException( "not implemented." );
+    }
+
 
     private void expandEnvelope( ReferencedEnvelope envelope, ReferencedEnvelope tmp ) {
         if (tmp != null) {

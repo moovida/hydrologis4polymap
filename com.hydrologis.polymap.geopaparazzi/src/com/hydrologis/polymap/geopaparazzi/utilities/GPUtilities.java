@@ -12,6 +12,8 @@
  */
 package com.hydrologis.polymap.geopaparazzi.utilities;
 
+import java.util.Collection;
+
 import java.awt.Color;
 import java.io.File;
 
@@ -20,6 +22,8 @@ import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.jgrasstools.dbs.compat.IJGTConnection;
 import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.GeometryDescriptor;
+import org.opengis.feature.type.PropertyDescriptor;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import org.apache.commons.logging.Log;
@@ -30,13 +34,22 @@ import com.hydrologis.polymap.geopaparazzi.GeopaparazziPlugin;
 import org.polymap.core.CorePlugin;
 import org.polymap.core.style.model.FeatureStyle;
 import org.polymap.core.style.model.feature.ConstantColor;
+import org.polymap.core.style.model.feature.ConstantFontFamily;
+import org.polymap.core.style.model.feature.ConstantFontStyle;
+import org.polymap.core.style.model.feature.ConstantFontWeight;
 import org.polymap.core.style.model.feature.ConstantNumber;
 import org.polymap.core.style.model.feature.ConstantStrokeCapStyle;
 import org.polymap.core.style.model.feature.ConstantStrokeDashStyle;
 import org.polymap.core.style.model.feature.ConstantStrokeJoinStyle;
 import org.polymap.core.style.model.feature.Fill;
+import org.polymap.core.style.model.feature.Font;
+import org.polymap.core.style.model.feature.FontStyle;
+import org.polymap.core.style.model.feature.FontWeight;
+import org.polymap.core.style.model.feature.LineStyle;
 import org.polymap.core.style.model.feature.PointStyle;
+import org.polymap.core.style.model.feature.PropertyString;
 import org.polymap.core.style.model.feature.Stroke;
+import org.polymap.core.style.model.feature.TextStyle;
 
 import org.polymap.p4.P4Plugin;
 
@@ -70,45 +83,46 @@ public class GPUtilities {
 
 
     private static FeatureStyle getComplexNotesStyle( String layerName, IJGTConnection connection ) throws Exception {
-        SimpleFeatureType simpleNotesfeatureType = GeopaparazziUtilities.getComplexNotefeatureType( layerName, connection );
+        SimpleFeatureType complexNotefeatureType = GeopaparazziUtilities.getComplexNotefeatureType( layerName, connection );
         FeatureStyle featureStyle = P4Plugin.styleRepo().newFeatureStyle();
-//        DefaultStyle.create( featureStyle, simpleNotesfeatureType );
+        // DefaultStyle.create( featureStyle, simpleNotesfeatureType );
 
         PointStyle point = featureStyle.members().createElement( PointStyle.defaults );
-        point.diameter.createValue( ConstantNumber.defaults( 10.0 ) );
+        point.diameter.createValue( ConstantNumber.defaults( 15.0 ) );
         Fill fill = point.fill.get();
-        fill.color.createValue( ConstantColor.defaults( Color.CYAN ) );
+        fill.color.createValue( ConstantColor.defaults( Color.GREEN ) );
         fill.opacity.createValue( ConstantNumber.defaults( 1.0 ) );
         Stroke stroke = point.stroke.get();
-        stroke.color.createValue( ConstantColor.defaults( Color.BLUE ) );
+        Color darkGreen = Color.decode( "#076507" );
+        stroke.color.createValue( ConstantColor.defaults( darkGreen ) );
         stroke.width.createValue( ConstantNumber.defaults( 1.0 ) );
         stroke.opacity.createValue( ConstantNumber.defaults( 1.0 ) );
         stroke.strokeStyle.get().capStyle.createValue( ConstantStrokeCapStyle.defaults() );
         stroke.strokeStyle.get().dashStyle.createValue( ConstantStrokeDashStyle.defaults() );
         stroke.strokeStyle.get().joinStyle.createValue( ConstantStrokeJoinStyle.defaults() );
 
-//        TextStyle text = featureStyle.members().createElement( TextStyle.defaults );
-//        Font font = text.font.get();
-//        font.family.createValue( ConstantFontFamily.defaults() );
-//        font.style.createValue( ConstantFontStyle.defaults() );
-//        font.weight.createValue( ConstantFontWeight.defaults() );
-//        font.size.createValue( ConstantNumber.defaults( 12.0 ) );
-//        text.color.createValue( ConstantColor.defaults( Color.BLUE ) );
-//
-//        String textFN = NotesTableFields.COLUMN_TEXT.getFieldName();
-//        text.property.createValue( PropertyString.defaults( textFN ) );
+        TextStyle text = featureStyle.members().createElement( TextStyle.defaults );
+        Font font = text.font.get();
+        font.family.createValue( ConstantFontFamily.defaults() );
+        font.style.createValue( ConstantFontStyle.defaults() );
+        font.weight.createValue( ConstantFontWeight.defaults( FontWeight.bold ) );
+        font.size.createValue( ConstantNumber.defaults( 12.0 ) );
+        text.color.createValue( ConstantColor.defaults( darkGreen ) );
+
+        setDefaultText( text, complexNotefeatureType );
 
         return featureStyle;
     }
 
 
     private static FeatureStyle getSimpleNotesStyle() {
-        SimpleFeatureType simpleNotesfeatureType = GeopaparazziUtilities.getSimpleNotesfeatureType();
+        // SimpleFeatureType simpleNotesfeatureType =
+        // GeopaparazziUtilities.getSimpleNotesfeatureType();
         FeatureStyle featureStyle = P4Plugin.styleRepo().newFeatureStyle();
-//        DefaultStyle.create( featureStyle, simpleNotesfeatureType );
+        // DefaultStyle.create( featureStyle, simpleNotesfeatureType );
 
         PointStyle point = featureStyle.members().createElement( PointStyle.defaults );
-        point.diameter.createValue( ConstantNumber.defaults( 10.0 ) );
+        point.diameter.createValue( ConstantNumber.defaults( 15.0 ) );
         Fill fill = point.fill.get();
         fill.color.createValue( ConstantColor.defaults( Color.CYAN ) );
         fill.opacity.createValue( ConstantNumber.defaults( 1.0 ) );
@@ -120,81 +134,86 @@ public class GPUtilities {
         stroke.strokeStyle.get().dashStyle.createValue( ConstantStrokeDashStyle.defaults() );
         stroke.strokeStyle.get().joinStyle.createValue( ConstantStrokeJoinStyle.defaults() );
 
-//        TextStyle text = featureStyle.members().createElement( TextStyle.defaults );
-//        Font font = text.font.get();
-//        font.family.createValue( ConstantFontFamily.defaults() );
-//        font.style.createValue( ConstantFontStyle.defaults() );
-//        font.weight.createValue( ConstantFontWeight.defaults() );
-//        font.size.createValue( ConstantNumber.defaults( 12.0 ) );
-//        text.color.createValue( ConstantColor.defaults( Color.BLUE ) );
-//
-//        String textFN = NotesTableFields.COLUMN_TEXT.getFieldName();
-//        text.property.createValue( PropertyString.defaults( textFN ) );
+        TextStyle text = featureStyle.members().createElement( TextStyle.defaults );
+        Font font = text.font.get();
+        font.family.createValue( ConstantFontFamily.defaults() );
+        font.style.createValue( ConstantFontStyle.defaults() );
+        font.weight.createValue( ConstantFontWeight.defaults( FontWeight.bold ) );
+        font.size.createValue( ConstantNumber.defaults( 12.0 ) );
+        text.color.createValue( ConstantColor.defaults( Color.BLUE ) );
+
+        text.property.createValue( PropertyString.defaults( GeopaparazziUtilities.NOTES_textFN ) );
 
         return featureStyle;
     }
 
 
     private static FeatureStyle getImageNotesStyle() {
-        SimpleFeatureType simpleNotesfeatureType = GeopaparazziUtilities.getSimpleNotesfeatureType();
+        // SimpleFeatureType simpleNotesfeatureType =
+        // GeopaparazziUtilities.getSimpleNotesfeatureType();
         FeatureStyle featureStyle = P4Plugin.styleRepo().newFeatureStyle();
-//        DefaultStyle.create( featureStyle, simpleNotesfeatureType );
+        // DefaultStyle.create( featureStyle, simpleNotesfeatureType );
 
         PointStyle point = featureStyle.members().createElement( PointStyle.defaults );
-        point.diameter.createValue( ConstantNumber.defaults( 8.0 ) );
+        point.diameter.createValue( ConstantNumber.defaults( 15.0 ) );
         Fill fill = point.fill.get();
         fill.color.createValue( ConstantColor.defaults( Color.RED ) );
-        fill.opacity.createValue( ConstantNumber.defaults( 0.7 ) );
+        fill.opacity.createValue( ConstantNumber.defaults( 1.0 ) );
         Stroke stroke = point.stroke.get();
-        stroke.color.createValue( ConstantColor.defaults( Color.RED ) );
+        Color darkRed = Color.decode( "#730D0D" );
+        stroke.color.createValue( ConstantColor.defaults( darkRed ) );
         stroke.width.createValue( ConstantNumber.defaults( 1.0 ) );
         stroke.opacity.createValue( ConstantNumber.defaults( 1.0 ) );
         stroke.strokeStyle.get().capStyle.createValue( ConstantStrokeCapStyle.defaults() );
         stroke.strokeStyle.get().dashStyle.createValue( ConstantStrokeDashStyle.defaults() );
         stroke.strokeStyle.get().joinStyle.createValue( ConstantStrokeJoinStyle.defaults() );
 
-        // TODO
-        // TextStyle text = featureStyle.members().createElement( TextStyle.defaults
-        // );
-        // Font font = text.font.get();
-        // font.family.createValue( ConstantFontFamily.defaults() );
-        // font.style.createValue( ConstantFontStyle.defaults() );
-        // font.weight.createValue( ConstantFontWeight.defaults() );
-        // font.size.createValue( ConstantNumber.defaults( 12.0 ) );
-        // text.color.createValue( ConstantColor.defaults( Color.BLUE ) );
+        TextStyle text = featureStyle.members().createElement( TextStyle.defaults );
+        Font font = text.font.get();
+        font.family.createValue( ConstantFontFamily.defaults() );
+        font.style.createValue( ConstantFontStyle.defaults() );
+        font.weight.createValue( ConstantFontWeight.defaults() );
+        font.size.createValue( ConstantNumber.defaults( 12.0 ) );
+        text.color.createValue( ConstantColor.defaults( darkRed ) );
+        text.property.createValue( PropertyString.defaults( GeopaparazziUtilities.IMAGES_imageidFN ) );
 
         return featureStyle;
     }
 
 
     private static FeatureStyle getGpsLogStyle() {
-        SimpleFeatureType simpleNotesfeatureType = GeopaparazziUtilities.getSimpleNotesfeatureType();
+        // SimpleFeatureType simpleNotesfeatureType =
+        // GeopaparazziUtilities.getSimpleNotesfeatureType();
         FeatureStyle featureStyle = P4Plugin.styleRepo().newFeatureStyle();
-//        DefaultStyle.create( featureStyle, simpleNotesfeatureType );
+        // DefaultStyle.create( featureStyle, simpleNotesfeatureType );
 
-        PointStyle point = featureStyle.members().createElement( PointStyle.defaults );
-        point.diameter.createValue( ConstantNumber.defaults( 8.0 ) );
-        Fill fill = point.fill.get();
-        fill.color.createValue( ConstantColor.defaults( Color.RED ) );
-        fill.opacity.createValue( ConstantNumber.defaults( 0.7 ) );
-        Stroke stroke = point.stroke.get();
-        stroke.color.createValue( ConstantColor.defaults( Color.RED ) );
-        stroke.width.createValue( ConstantNumber.defaults( 1.0 ) );
-        stroke.opacity.createValue( ConstantNumber.defaults( 1.0 ) );
-        stroke.strokeStyle.get().capStyle.createValue( ConstantStrokeCapStyle.defaults() );
-        stroke.strokeStyle.get().dashStyle.createValue( ConstantStrokeDashStyle.defaults() );
-        stroke.strokeStyle.get().joinStyle.createValue( ConstantStrokeJoinStyle.defaults() );
+        LineStyle line = featureStyle.members().createElement( LineStyle.defaults );
+        line.fill.get().width.createValue( ConstantNumber.defaults( 3.0 ) );
+        line.fill.get().color.createValue( ConstantColor.defaults( Color.ORANGE ) );
+        line.fill.get().opacity.createValue( ConstantNumber.defaults( 1.0 ) );
 
-        // TODO
-        // TextStyle text = featureStyle.members().createElement( TextStyle.defaults
-        // );
-        // Font font = text.font.get();
-        // font.family.createValue( ConstantFontFamily.defaults() );
-        // font.style.createValue( ConstantFontStyle.defaults() );
-        // font.weight.createValue( ConstantFontWeight.defaults() );
-        // font.size.createValue( ConstantNumber.defaults( 12.0 ) );
-        // text.color.createValue( ConstantColor.defaults( Color.BLUE ) );
+        TextStyle text = featureStyle.members().createElement( TextStyle.defaults );
+        Font font = text.font.get();
+        font.family.createValue( ConstantFontFamily.defaults() );
+        font.style.createValue( ConstantFontStyle.defaults( FontStyle.italic ) );
+        font.weight.createValue( ConstantFontWeight.defaults( FontWeight.bold ) );
+        font.size.createValue( ConstantNumber.defaults( 12.0 ) );
+        text.color.createValue( ConstantColor.defaults( Color.ORANGE ) );
 
         return featureStyle;
+    }
+
+
+    private static void setDefaultText( TextStyle text, SimpleFeatureType schema ) {
+        Collection<PropertyDescriptor> schemaDescriptors = schema.getDescriptors();
+        GeometryDescriptor geometryDescriptor = schema.getGeometryDescriptor();
+        for (PropertyDescriptor descriptor : schemaDescriptors) {
+            if (geometryDescriptor == null || !geometryDescriptor.equals( descriptor )) {
+                if (String.class.isAssignableFrom( descriptor.getType().getBinding() )) {
+                    text.property.createValue( PropertyString.defaults( descriptor.getName().getLocalPart() ) );
+                    break;
+                }
+            }
+        }
     }
 }
