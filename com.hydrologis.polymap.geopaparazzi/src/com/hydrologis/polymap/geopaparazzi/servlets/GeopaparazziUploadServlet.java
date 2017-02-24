@@ -40,12 +40,18 @@ import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
 import org.polymap.core.catalog.IUpdateableMetadataCatalog.Updater;
+import org.polymap.core.catalog.resolve.IResourceInfo;
+import org.polymap.core.project.ILayer;
+import org.polymap.core.project.IMap;
 import org.polymap.core.runtime.session.DefaultSessionContext;
 import org.polymap.core.runtime.session.DefaultSessionContextProvider;
 import org.polymap.core.runtime.session.SessionContext;
+import org.polymap.core.style.model.FeatureStyle;
 
+import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.p4.P4Plugin;
 import org.polymap.p4.catalog.AllResolver;
+import org.polymap.p4.project.ProjectRepository;
 
 public class GeopaparazziUploadServlet
         extends HttpServlet {
@@ -132,59 +138,61 @@ public class GeopaparazziUploadServlet
         AtomicReference<GPServiceInfo> serviceInfo = new AtomicReference();
         NullProgressMonitor monitor = new NullProgressMonitor();
 
-        try (SqliteDb db = new SqliteDb()) {
+        // create catalog entry
+        try (
+            Updater update = P4Plugin.localCatalog().prepareUpdate();
+            SqliteDb db = new SqliteDb(); 
+            UnitOfWork uow = ProjectRepository.newUnitOfWork();
+        ) {
             db.open( dbFile.getAbsolutePath() );
+            update.newEntry( metadata -> {
+                try {
+                    String databasePath = db.getDatabasePath();
+                    String title = FileUtilities.getNameWithoutExtention( dbFile );
+                    String projectInfo = "Geopaparazzi Project";
+                    projectInfo = GeopaparazziUtilities.getProjectInfo( db.getConnection(), false );
 
-            // create catalog entry
-            try (Updater update = P4Plugin.localCatalog().prepareUpdate()) {
-                update.newEntry( metadata -> {
-                    try {
-                        String databasePath = db.getDatabasePath();
-                        String title = FileUtilities.getNameWithoutExtention( dbFile );
-                        String projectInfo = "Geopaparazzi Project";
-                        projectInfo = GeopaparazziUtilities.getProjectInfo( db.getConnection(), false );
+                    metadata.setTitle( title );
+                    metadata.setDescription( projectInfo );
+                    metadata.setType( "Geopaparazzi Sqlite Project Database" );
+                    metadata.setFormats( Sets.newHashSet( "..." ) );
 
-                        metadata.setTitle( title );
-                        metadata.setDescription( projectInfo );
-                        metadata.setType( "Geopaparazzi Sqlite Project Database" );
-                        metadata.setFormats( Sets.newHashSet( "..." ) );
+                    // actual connection to the data source; just an example
+                    metadata.setConnectionParams( GPServiceResolver.createParams( databasePath ) );
 
-                        // actual connection to the data source; just an example
-                        metadata.setConnectionParams( GPServiceResolver.createParams( databasePath ) );
-
-                        // resolve the new data source, testing the connection params
-                        // and choose resource to create a new layer for
-
-                        serviceInfo.set( (GPServiceInfo)AllResolver.instance().resolve( metadata, monitor ) );
-                    }
-                    catch (Exception e) {
-                        throw new RuntimeException( "Unable to resolve imported data source.", e );
-                    }
-                } );
-                update.commit();
-            }
-            catch (Exception e) {
-                throw new RuntimeException( e );
-            }
+                    // resolve the new data source, testing the connection params
+                    // and choose resource to create a new layer for
+                    serviceInfo.set( (GPServiceInfo)AllResolver.instance().resolve( metadata, monitor ) );
+                }
+                catch (Exception e) {
+                    throw new RuntimeException( "Unable to resolve imported data source.", e );
+                }
+            } );
+            update.commit();
 
             // create new layer(s) for resource(s)
-            // for (IResourceInfo res : serviceInfo.get().getResources( monitor )) {
-            // String name = res.getName();
-            //
-            // FeatureStyle featureStyle4Layer = GPUtilities.getFeatureStyle4Layer(
-            // name, db.getConnection() );
-            // if (featureStyle4Layer == null) {
-            // featureStyle4Layer = P4Plugin.styleRepo().newFeatureStyle();
-            // DefaultStyle.createAllStyles( featureStyle4Layer );
-            // }
-            //
-            // BatikApplication.instance().getContext().propagate( this );
-            // NewLayerOperation op = new NewLayerOperation().label.put( name
-            // ).res.put( res ).featureStyle.put( featureStyle4Layer ).uow.put(
-            // ProjectRepository.unitOfWork() ).map.put( map.get() );
-            //
-            // OperationSupport.instance().execute( op, false, false );
-            // }
+            for (IResourceInfo res : serviceInfo.get().getResources( monitor )) {
+                String name = res.getName();
+
+                FeatureStyle featureStyle4Layer = GPUtilities.getFeatureStyle4Layer( name, db.getConnection() );
+                assert featureStyle4Layer != null : "Must never happen!?";
+
+                // create ILayer entity
+                uow.createEntity( ILayer.class, null, (ILayer proto) -> {
+                    proto.label.set( name );
+                    proto.description.set( "Andrea, please put something in here :)" );
+                    proto.resourceIdentifier.set( AllResolver.resourceIdentifier( res ) );
+                    proto.styleIdentifier.set( featureStyle4Layer.id() );
+                    proto.parentMap.set( uow.entity( IMap.class, ProjectRepository.ROOT_MAP_ID ) );
+                    proto.orderKey.set( proto.maxOrderKey() + 1  );
+                    return proto;
+                });
+                featureStyle4Layer.store();
+            }
+            uow.commit();
+        }
+        catch (Exception e) {
+            throw new RuntimeException( e );
         }
     }
 }
