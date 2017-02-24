@@ -191,7 +191,7 @@ public class GeopaparazziUploadServlet
                 featureStyle4Layer.store();
             }
             
-            // XXX adopt map extent
+            // XXX adapt map extent
             //map.setMaxExtent( ...);
        
             uow.commit();
