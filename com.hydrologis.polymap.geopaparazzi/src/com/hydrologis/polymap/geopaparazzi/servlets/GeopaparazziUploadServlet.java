@@ -12,7 +12,6 @@
  */
 package com.hydrologis.polymap.geopaparazzi.servlets;
 
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import java.io.File;
@@ -41,6 +40,9 @@ import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
 import org.polymap.core.catalog.IUpdateableMetadataCatalog.Updater;
+import org.polymap.core.runtime.session.DefaultSessionContext;
+import org.polymap.core.runtime.session.DefaultSessionContextProvider;
+import org.polymap.core.runtime.session.SessionContext;
 
 import org.polymap.p4.P4Plugin;
 import org.polymap.p4.catalog.AllResolver;
@@ -49,6 +51,26 @@ public class GeopaparazziUploadServlet
         extends HttpServlet {
 
     private static final Log log = LogFactory.getLog( GeopaparazziUploadServlet.class );
+
+    private static final DefaultSessionContextProvider sessionProvider = new DefaultSessionContextProvider();
+    
+    private DefaultSessionContext           updateContext;
+
+    private DefaultSessionContextProvider   contextProvider;
+
+    
+    public GeopaparazziUploadServlet() {
+        // sessionContext
+        assert updateContext == null && contextProvider == null;
+        updateContext = new DefaultSessionContext( getClass().getSimpleName() + hashCode() );
+        contextProvider = new DefaultSessionContextProvider() {
+            protected DefaultSessionContext newContext( String sessionKey ) {
+                assert sessionKey.equals( updateContext.getSessionKey() );
+                return updateContext;
+            }
+        };
+        SessionContext.addProvider( contextProvider );
+    }
 
 
     @Override
@@ -71,8 +93,8 @@ public class GeopaparazziUploadServlet
         String projectFileName = "";
         String msg = "";
         PrintWriter outWriter = response.getWriter();
-        Map<String,String[]> parms = request.getParameterMap();
-        String[] nameParams = parms.get( "name" );
+//        Map<String,String[]> parms = request.getParameterMap();
+        String[] nameParams = request.getParameterValues( "name" );
         if (nameParams != null && nameParams.length == 1) {
             projectFileName = nameParams[0];
             File file = new File( gpapProjectsFolder, projectFileName );
@@ -90,10 +112,14 @@ public class GeopaparazziUploadServlet
             }
 
             try {
+                sessionProvider.mapContext( updateContext.getSessionKey(), true );
                 addToCatalog( file );
             }
             catch (Exception e) {
                 log.error( "Unable to add resource to the catalog.", e );
+            }
+            finally {
+                sessionProvider.unmapContext();
             }
         }
 
