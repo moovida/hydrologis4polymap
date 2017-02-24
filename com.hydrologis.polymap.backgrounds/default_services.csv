@@ -1,0 +1,5 @@
+id;title;description;url
+terrestris_wms;Terrestris WMS;Terrestris WMS;http://ows.terrestris.de/osm/service/
+altoadige_wms;WMS Province Alto Adige;WMS Province Alto Adige;http://sdi.provincia.bz.it/geoserver/wms
+ctptrentino_wms;CTP Trentino;CTP Trentino;http://geoservices.provincia.tn.it/siat/services/OGC/CTP/ImageServer/WMSServer?SERVICE=WMS&REQUEST=getcapabilities&version=1.1.1
+emilia_wms;WMS Emilia Romagna;WMS Emilia Romagna;http://servizigis.regione.emilia-romagna.it/wms

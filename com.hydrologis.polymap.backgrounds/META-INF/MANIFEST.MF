@@ -1,0 +1,19 @@
+Manifest-Version: 1.0
+Eclipse-RegisterBuddy: org.polymap.core.data
+Bundle-ManifestVersion: 2
+Bundle-Name: Background Maps Support Plugin
+Bundle-SymbolicName: com.hydrologis.polymap.backgrounds;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.hydrologis.polymap.backgrounds.BackgroundsPlugin
+Bundle-Vendor: hydrologis.com
+Require-Bundle: org.polymap.core.data;bundle-version="4.0.0",
+ org.polymap.p4.data.importer;bundle-version="1.0.0",
+ org.polymap.core.style,
+ org.polymap.p4;bundle-version="1.0.0",
+ org.polymap.rhei.batik;bundle-version="4.0.0",
+ org.junit;bundle-version="4.11.0";resolution:=optional,
+ org.eclipse.equinox.http.registry;bundle-version="1.1.300"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: .
+Export-Package: com.hydrologis.polymap.backgrounds
