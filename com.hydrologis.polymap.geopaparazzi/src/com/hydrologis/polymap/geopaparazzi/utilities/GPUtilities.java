@@ -207,6 +207,8 @@ public class GPUtilities {
         font.size.createValue( ConstantNumber.defaults( 12.0 ) );
         text.color.createValue( ConstantColor.defaults( Color.ORANGE ) );
 
+        text.property.createValue( PropertyString.defaults( GeopaparazziUtilities.GPSLOG_descrFN ) );
+
         return featureStyle;
     }
 
