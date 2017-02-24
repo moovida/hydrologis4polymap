@@ -17,7 +17,13 @@ import java.util.Collection;
 import java.util.List;
 
 import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.awt.image.DirectColorModel;
 import java.io.File;
+import java.io.InputStream;
+
+import javax.imageio.ImageIO;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
@@ -34,6 +40,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.hydrologis.polymap.geopaparazzi.GeopaparazziPlugin;
+
+import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.widgets.Control;
 
 import org.polymap.core.CorePlugin;
 import org.polymap.core.style.model.FeatureStyle;
@@ -90,7 +103,8 @@ public class GPUtilities {
 
 
     private static FeatureStyle getComplexNotesStyle( String layerName, IJGTConnection connection ) throws Exception {
-        SimpleFeatureType complexNotefeatureType = GeopaparazziUtilities.getComplexNotefeatureType( layerName, connection );
+        SimpleFeatureType complexNotefeatureType = GeopaparazziUtilities
+                .getComplexNotefeatureType( layerName, connection );
         FeatureStyle featureStyle = P4Plugin.styleRepo().newFeatureStyle();
         // DefaultStyle.create( featureStyle, simpleNotesfeatureType );
 
@@ -228,7 +242,7 @@ public class GPUtilities {
 
 
     /**
-     *  Get the geopaparazzi projects folder.
+     * Get the geopaparazzi projects folder.
      *
      * @return the default folder for geopaparazzi projects.
      */
@@ -261,4 +275,52 @@ public class GPUtilities {
         return newFile;
     }
 
+
+    public static BufferedImage scaleImageFromStream( Control control, InputStream inputStream, boolean doOriginalSize,
+            int maxSize )
+            throws Exception {
+        BufferedImage image = ImageIO.read( inputStream );
+
+        int imageWidth = image.getWidth();
+        int imageHeight = image.getHeight();
+        int width = imageWidth;
+        int height = imageHeight;
+        if (imageWidth > imageHeight) {
+            if (width > maxSize && !doOriginalSize)
+                width = maxSize;
+            height = imageHeight * width / imageWidth;
+        }
+        else {
+            if (height > maxSize && !doOriginalSize)
+                height = maxSize;
+            width = height * imageWidth / imageHeight;
+        }
+
+        BufferedImage resizedImage = new BufferedImage( width, height, BufferedImage.TYPE_INT_RGB );
+        Graphics2D g = resizedImage.createGraphics();
+        g.drawImage( image, 0, 0, width, height, null );
+        g.dispose();
+
+        return resizedImage;
+    }
+
+
+    public static Image buffered2SwtImage( BufferedImage bufferedImage, Device device ) {
+        DirectColorModel colorModel = (DirectColorModel)bufferedImage.getColorModel();
+        PaletteData palette = new PaletteData( colorModel.getRedMask(), colorModel.getGreenMask(), colorModel
+                .getBlueMask() );
+        ImageData data = new ImageData( bufferedImage.getWidth(), bufferedImage.getHeight(), colorModel
+                .getPixelSize(), palette );
+        for (int y = 0; y < data.height; y++) {
+            for (int x = 0; x < data.width; x++) {
+                int rgb = bufferedImage.getRGB( x, y );
+                int pixel = palette.getPixel( new RGB( (rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF ) );
+                data.setPixel( x, y, pixel );
+                if (colorModel.hasAlpha()) {
+                    data.setAlpha( x, y, (rgb >> 24) & 0xFF );
+                }
+            }
+        }
+        return new Image( device, data );
+    }
 }
