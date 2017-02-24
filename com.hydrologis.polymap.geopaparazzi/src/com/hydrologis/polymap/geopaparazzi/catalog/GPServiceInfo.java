@@ -49,6 +49,9 @@ import org.polymap.core.catalog.resolve.IServiceInfo;
 public class GPServiceInfo
         implements IServiceInfo {
 
+    /** FIXME dirty hack to get the db instance to FeaturePanelContribution. */
+    public static SqliteDb globalDb;
+
     private IMetadata   metadata;
 
     private SqliteDb    db;
@@ -64,6 +67,9 @@ public class GPServiceInfo
         this.db = new SqliteDb();
         this.db.open( databaseFile.getAbsolutePath() );
         this.ds = new GPDataStore( db );
+        
+        assert globalDb == null;
+        globalDb = db;
     }
 
 
