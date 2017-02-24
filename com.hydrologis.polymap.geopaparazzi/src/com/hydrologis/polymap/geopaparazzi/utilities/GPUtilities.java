@@ -12,7 +12,9 @@
  */
 package com.hydrologis.polymap.geopaparazzi.utilities;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import java.awt.Color;
 import java.io.File;
@@ -21,6 +23,8 @@ import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.jgrasstools.dbs.compat.IJGTConnection;
 import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
+import org.jgrasstools.gears.utils.StringUtilities;
+import org.jgrasstools.gears.utils.files.FileUtilities;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.GeometryDescriptor;
 import org.opengis.feature.type.PropertyDescriptor;
@@ -62,6 +66,15 @@ public class GPUtilities {
     public static final ReferencedEnvelope        WORLD = new ReferencedEnvelope( -180, 180, -85, 85, WGS84 );
 
 
+    /**
+     * Get the {@link FeatureStyle} for a given geopap layer.
+     *
+     *
+     * @param layerName the name of the geopap layer.
+     * @param connection the db connection.
+     * @return the feature style for the layer.
+     * @throws Exception
+     */
     public static FeatureStyle getFeatureStyle4Layer( String layerName, IJGTConnection connection ) throws Exception {
         switch (layerName) {
             case GeopaparazziUtilities.SIMPLE_NOTES:
@@ -73,12 +86,6 @@ public class GPUtilities {
             default:
                 return getComplexNotesStyle( layerName, connection );
         }
-    }
-
-
-    public static File getGeopaparazziProjectsFolder() {
-        File gpapProjectsFolder = CorePlugin.getDataLocation( GeopaparazziPlugin.instance() );
-        return gpapProjectsFolder;
     }
 
 
@@ -216,4 +223,40 @@ public class GPUtilities {
             }
         }
     }
+
+
+    /**
+     *  Get the geopaparazzi projects folder.
+     *
+     * @return the default folder for geopaparazzi projects.
+     */
+    public static File getGeopaparazziProjectsFolder() {
+        File gpapProjectsFolder = CorePlugin.getDataLocation( GeopaparazziPlugin.instance() );
+        return gpapProjectsFolder;
+    }
+
+
+    /**
+     * Gets a safe project file to use to make sure nothing gets overwritten.
+     *
+     * @param proposedFile the proposed file.
+     * @return the safe file.
+     */
+    public static File getSafeProjectFile( File proposedFile ) {
+        File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
+        File[] geopaparazziFiles = GeopaparazziUtilities.getGeopaparazziFiles( gpapProjectsFolder );
+        List<String> namesNoExt = new ArrayList<>();
+        for (File file : geopaparazziFiles) {
+            String name = FileUtilities.getNameWithoutExtention( file );
+            namesNoExt.add( name );
+        }
+
+        String name = FileUtilities.getNameWithoutExtention( proposedFile );
+        String safeName = StringUtilities.checkSameName( namesNoExt, name );
+
+        File newFile = new File( gpapProjectsFolder, safeName + ".gpap" );
+
+        return newFile;
+    }
+
 }

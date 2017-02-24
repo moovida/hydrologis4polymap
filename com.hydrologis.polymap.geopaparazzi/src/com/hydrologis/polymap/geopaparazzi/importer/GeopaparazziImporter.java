@@ -12,8 +12,6 @@
  */
 package com.hydrologis.polymap.geopaparazzi.importer;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import java.io.File;
@@ -22,7 +20,6 @@ import java.io.IOException;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
 import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
-import org.jgrasstools.gears.utils.StringUtilities;
 import org.jgrasstools.gears.utils.files.FileUtilities;
 
 import org.apache.commons.io.FilenameUtils;
@@ -241,19 +238,7 @@ public class GeopaparazziImporter
 
 
     private void safeCopyFile() throws IOException {
-        File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
-
-        File[] geopaparazziFiles = GeopaparazziUtilities.getGeopaparazziFiles( gpapProjectsFolder );
-        List<String> namesNoExt = new ArrayList<>();
-        for (File file : geopaparazziFiles) {
-            String name = FileUtilities.getNameWithoutExtention( file );
-            namesNoExt.add( name );
-        }
-
-        String name = FileUtilities.getNameWithoutExtention( geopapDatabaseFile );
-        String safeName = StringUtilities.checkSameName( namesNoExt, name );
-
-        File newFile = new File( gpapProjectsFolder, safeName + ".gpap" );
+        File newFile = GPUtilities.getSafeProjectFile( geopapDatabaseFile );
         if (newFile.exists()) {
             throw new IOException( newFile + " already exists!" );
         }
