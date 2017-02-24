@@ -32,5 +32,12 @@
             class="com.hydrologis.polymap.geopaparazzi.catalog.GPResolverProvider">
       </resolver>
    </extension>
+   <extension
+         point="org.polymap.rhei.batik.contributions">
+      <contributions
+            class="com.hydrologis.polymap.geopaparazzi.FeaturePanelContribution"
+            id="com.hydrologis.polymap.geopaparazzi.FeaturePanelContribution">
+      </contributions>
+   </extension>
 
 </plugin>

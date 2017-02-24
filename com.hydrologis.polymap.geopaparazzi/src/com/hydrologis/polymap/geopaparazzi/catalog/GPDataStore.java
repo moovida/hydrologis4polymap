@@ -54,11 +54,16 @@ public class GPDataStore
         extends AbstractDataStore
         implements DataStore {
 
-    private SqliteDb db;
+    private SqliteDb        db;
 
 
     public GPDataStore( SqliteDb db ) {
         this.db = db;
+    }
+
+    
+    public SqliteDb db() {
+        return db;
     }
 
 
