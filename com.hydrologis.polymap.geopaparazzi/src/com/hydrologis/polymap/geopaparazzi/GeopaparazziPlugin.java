@@ -14,9 +14,37 @@ package com.hydrologis.polymap.geopaparazzi;
 
 import org.osgi.framework.BundleContext;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.google.common.collect.Sets;
+
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+
+import org.polymap.core.catalog.IMetadata;
+import org.polymap.core.catalog.IUpdateableMetadataCatalog.Updater;
+import org.polymap.core.catalog.resolve.IResourceInfo;
+import org.polymap.core.catalog.resolve.IServiceInfo;
+import org.polymap.core.data.wms.catalog.WmsServiceResolver;
+import org.polymap.core.project.ILayer;
+import org.polymap.core.project.IMap;
+import org.polymap.core.runtime.session.DefaultSessionContext;
+import org.polymap.core.runtime.session.DefaultSessionContextProvider;
+import org.polymap.core.runtime.session.SessionContext;
+
 import org.polymap.rhei.batik.app.SvgImageRegistryHelper;
+
+import org.polymap.model2.runtime.UnitOfWork;
+import org.polymap.p4.P4Plugin;
+import org.polymap.p4.catalog.AllResolver;
+import org.polymap.p4.catalog.LocalCatalog;
+import org.polymap.p4.project.ProjectRepository;
 
 /**
  * 
@@ -25,8 +53,14 @@ import org.polymap.rhei.batik.app.SvgImageRegistryHelper;
 public class GeopaparazziPlugin
         extends AbstractUIPlugin {
 
-    public static final String        ID = "com.hydrologis.polymap.geopaparazzi";
+    private static final Log log = LogFactory.getLog( GeopaparazziPlugin.class );
+    
+    public static final String      ID = "com.hydrologis.polymap.geopaparazzi";
 
+    private static final String     BACKGROUND_SERVICE_ID = "_geopaparazzi_background_";
+
+    private static final DefaultSessionContextProvider sessionProvider = new DefaultSessionContextProvider();
+    
     private static GeopaparazziPlugin instance;
 
 
@@ -42,6 +76,7 @@ public class GeopaparazziPlugin
         return instance().images;
     }
 
+    
     // instance *******************************************
 
     public SvgImageRegistryHelper images = new SvgImageRegistryHelper( this );
@@ -50,6 +85,34 @@ public class GeopaparazziPlugin
     public void start( BundleContext context ) throws Exception {
         super.start( context );
         instance = this;
+     
+        new Job( "Default layers" ) {
+            private DefaultSessionContext           updateContext;
+            private DefaultSessionContextProvider   contextProvider;
+            
+            @Override
+            protected IStatus run( IProgressMonitor monitor ) {
+                // sessionContext
+                assert updateContext == null && contextProvider == null;
+                updateContext = new DefaultSessionContext( getClass().getSimpleName() + hashCode() );
+                contextProvider = new DefaultSessionContextProvider() {
+                    protected DefaultSessionContext newContext( String sessionKey ) {
+                        assert sessionKey.equals( updateContext.getSessionKey() );
+                        return updateContext;
+                    }
+                };
+                SessionContext.addProvider( contextProvider );
+                
+                try {
+                    sessionProvider.mapContext( updateContext.getSessionKey(), true );
+                    initBackgroundLayer();
+                    return Status.OK_STATUS;
+                }
+                finally {
+                    sessionProvider.unmapContext();
+                }
+            }
+        }.schedule( 1000 ); // give plugins time to settle
     }
 
 
@@ -58,4 +121,59 @@ public class GeopaparazziPlugin
         instance = null;
     }
 
+    
+    protected void initBackgroundLayer() {
+        // check existing entry
+        log.info( "Checking default background layers..." );
+        LocalCatalog catalog = P4Plugin.localCatalog();
+        NullProgressMonitor monitor = new NullProgressMonitor();
+        if (catalog.entry( BACKGROUND_SERVICE_ID, monitor ).isPresent()) {
+            return;
+        }
+        
+        log.info( "Creating default background layers..." );
+        try {
+            try (Updater update = catalog.prepareUpdate()) {
+                // create WMS service
+                update.newEntry( metadata -> {
+                    metadata.setIdentifier( BACKGROUND_SERVICE_ID );
+                    metadata.setTitle( "Background" );
+                    metadata.setDescription( "Default background for Geopaparazzis" );
+                    metadata.setType( "Service" );
+                    metadata.setFormats( Sets.newHashSet( "WMS", "WFS" ) );
+                    metadata.setConnectionParams( WmsServiceResolver.createParams( "http://ows.terrestris.de/osm/service/" ) );
+                });
+                // remove default background service
+                //update.removeEntry( LocalCatalog.WORLD_BACKGROUND_ID );
+                update.commit();
+            }
+            
+            try (UnitOfWork uow = ProjectRepository.newUnitOfWork()) {
+                IMap rootMap = uow.entity( IMap.class, ProjectRepository.ROOT_MAP_ID );
+                
+                // remove default layers
+                rootMap.layers.stream().forEach( layer -> uow.removeEntity( layer ) );
+                
+                IMetadata md = catalog.entry( BACKGROUND_SERVICE_ID, monitor ).get();
+                IServiceInfo service = (IServiceInfo)AllResolver.instance().resolve( md ).get();
+                for (IResourceInfo res : service.getResources( monitor )) {
+                    if ("OSM-WMS".equalsIgnoreCase( res.getName() ) ) {
+                        uow.createEntity( ILayer.class, null, (ILayer proto) -> {
+                            proto.parentMap.set( rootMap );
+                            proto.label.set( "Background" );
+                            proto.description.set( res.getDescription().orElse( null ) );
+                            proto.resourceIdentifier.set( AllResolver.resourceIdentifier( res ) );
+                            proto.orderKey.set( 1 );
+                            return proto;
+                        });
+                    }
+                }
+                uow.commit();
+            }
+        }
+        catch (Exception e) {
+            log.warn( "Error while creating default background layer.", e );
+        }
+
+    }
 }
