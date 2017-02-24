@@ -24,5 +24,6 @@ Bundle-ClassPath: .,
  lib/slf4j-api-1.7.5.jar,
  lib/slf4j-simple-1.7.5.jar,
  lib/sqlite-jdbc-3.8.11.2.jar,
- lib/gt-process-16.1.jar
+ lib/gt-process-16.1.jar,
+ lib/scannotation-1.0.3.jar
 Export-Package: com.hydrologis.polymap.geopaparazzi

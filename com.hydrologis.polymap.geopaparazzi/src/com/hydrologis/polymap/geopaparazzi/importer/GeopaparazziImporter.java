@@ -303,6 +303,7 @@ public class GeopaparazziImporter
         }
 
         // create new layer(s) for resource(s)
+        BatikApplication.instance().getContext().propagate( this );
         for (IResourceInfo res : serviceInfo.get().getResources( monitor )) {
             String name = res.getName();
 
@@ -312,10 +313,19 @@ public class GeopaparazziImporter
                 DefaultStyle.createAllStyles( featureStyle4Layer );
             }
 
-            BatikApplication.instance().getContext().propagate( this );
-            NewLayerOperation op = new NewLayerOperation().label.put( name ).res.put( res ).featureStyle.put( featureStyle4Layer ).uow.put( ProjectRepository.unitOfWork() ).map.put( map.get() );
+            NewLayerOperation op = new NewLayerOperation()
+                    .label.put( name )
+                    .res.put( res )
+                    .featureStyle.put( featureStyle4Layer )
+                    .uow.put( ProjectRepository.unitOfWork() )
+                    .map.put( map.get() );
 
             OperationSupport.instance().execute( op, false, false );
+            
+            // the above operation commits the ProjectRepository UnitOfWork; this
+            // fires events and let the map re-render the new layer; give it some
+            // time to settle
+            Thread.sleep( 2000 );
         }
     }
 
