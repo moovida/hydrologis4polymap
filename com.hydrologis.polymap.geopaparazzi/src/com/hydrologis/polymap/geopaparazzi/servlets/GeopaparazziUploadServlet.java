@@ -13,6 +13,7 @@
 package com.hydrologis.polymap.geopaparazzi.servlets;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,10 +26,24 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
+import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
+import org.jgrasstools.gears.utils.files.FileUtilities;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.google.common.collect.Sets;
+import com.hydrologis.polymap.geopaparazzi.catalog.GPServiceInfo;
+import com.hydrologis.polymap.geopaparazzi.catalog.GPServiceResolver;
 import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
+
+import org.eclipse.core.runtime.NullProgressMonitor;
+
+import org.polymap.core.catalog.IUpdateableMetadataCatalog.Updater;
+
+import org.polymap.p4.P4Plugin;
+import org.polymap.p4.catalog.AllResolver;
 
 public class GeopaparazziUploadServlet
         extends HttpServlet {
@@ -73,12 +88,77 @@ public class GeopaparazziUploadServlet
                 Files.copy( inputStream, file.toPath() );
                 msg = "Uploaded file: " + projectFileName;
             }
+
+            try {
+                addToCatalog( file );
+            }
+            catch (Exception e) {
+                log.error( "Unable to add resource to the catalog.", e );
+            }
         }
-        
-        // TODO create a project for this file and import the geopap project into it
-        
 
         outWriter.write( msg );
 
+    }
+
+
+    private void addToCatalog( File dbFile ) throws Exception {
+        AtomicReference<GPServiceInfo> serviceInfo = new AtomicReference();
+        NullProgressMonitor monitor = new NullProgressMonitor();
+
+        try (SqliteDb db = new SqliteDb()) {
+            db.open( dbFile.getAbsolutePath() );
+
+            // create catalog entry
+            try (Updater update = P4Plugin.localCatalog().prepareUpdate()) {
+                update.newEntry( metadata -> {
+                    try {
+                        String databasePath = db.getDatabasePath();
+                        String title = FileUtilities.getNameWithoutExtention( dbFile );
+                        String projectInfo = "Geopaparazzi Project";
+                        projectInfo = GeopaparazziUtilities.getProjectInfo( db.getConnection(), false );
+
+                        metadata.setTitle( title );
+                        metadata.setDescription( projectInfo );
+                        metadata.setType( "Geopaparazzi Sqlite Project Database" );
+                        metadata.setFormats( Sets.newHashSet( "..." ) );
+
+                        // actual connection to the data source; just an example
+                        metadata.setConnectionParams( GPServiceResolver.createParams( databasePath ) );
+
+                        // resolve the new data source, testing the connection params
+                        // and choose resource to create a new layer for
+
+                        serviceInfo.set( (GPServiceInfo)AllResolver.instance().resolve( metadata, monitor ) );
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException( "Unable to resolve imported data source.", e );
+                    }
+                } );
+                update.commit();
+            }
+            catch (Exception e) {
+                throw new RuntimeException( e );
+            }
+
+            // create new layer(s) for resource(s)
+            // for (IResourceInfo res : serviceInfo.get().getResources( monitor )) {
+            // String name = res.getName();
+            //
+            // FeatureStyle featureStyle4Layer = GPUtilities.getFeatureStyle4Layer(
+            // name, db.getConnection() );
+            // if (featureStyle4Layer == null) {
+            // featureStyle4Layer = P4Plugin.styleRepo().newFeatureStyle();
+            // DefaultStyle.createAllStyles( featureStyle4Layer );
+            // }
+            //
+            // BatikApplication.instance().getContext().propagate( this );
+            // NewLayerOperation op = new NewLayerOperation().label.put( name
+            // ).res.put( res ).featureStyle.put( featureStyle4Layer ).uow.put(
+            // ProjectRepository.unitOfWork() ).map.put( map.get() );
+            //
+            // OperationSupport.instance().execute( op, false, false );
+            // }
+        }
     }
 }
