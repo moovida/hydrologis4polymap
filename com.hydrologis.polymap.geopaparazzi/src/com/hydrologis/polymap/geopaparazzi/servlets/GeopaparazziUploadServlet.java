@@ -171,6 +171,7 @@ public class GeopaparazziUploadServlet
             update.commit();
 
             // create new layer(s) for resource(s)
+            IMap map = uow.entity( IMap.class, ProjectRepository.ROOT_MAP_ID );
             for (IResourceInfo res : serviceInfo.get().getResources( monitor )) {
                 String name = res.getName();
 
@@ -183,12 +184,16 @@ public class GeopaparazziUploadServlet
                     proto.description.set( "Andrea, please put something in here :)" );
                     proto.resourceIdentifier.set( AllResolver.resourceIdentifier( res ) );
                     proto.styleIdentifier.set( featureStyle4Layer.id() );
-                    proto.parentMap.set( uow.entity( IMap.class, ProjectRepository.ROOT_MAP_ID ) );
+                    proto.parentMap.set( map );
                     proto.orderKey.set( proto.maxOrderKey() + 1  );
                     return proto;
                 });
                 featureStyle4Layer.store();
             }
+            
+            // XXX adopt map extent
+            //map.setMaxExtent( ...);
+       
             uow.commit();
         }
         catch (Exception e) {
