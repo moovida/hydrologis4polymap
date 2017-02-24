@@ -53,15 +53,16 @@ import org.polymap.p4.project.ProjectRepository;
 public class GeopaparazziPlugin
         extends AbstractUIPlugin {
 
-    private static final Log log = LogFactory.getLog( GeopaparazziPlugin.class );
-    
-    public static final String      ID = "com.hydrologis.polymap.geopaparazzi";
+    private static final Log                           log                   = LogFactory
+            .getLog( GeopaparazziPlugin.class );
 
-    private static final String     BACKGROUND_SERVICE_ID = "_geopaparazzi_background_";
+    public static final String                         ID                    = "com.hydrologis.polymap.geopaparazzi";
 
-    private static final DefaultSessionContextProvider sessionProvider = new DefaultSessionContextProvider();
-    
-    private static GeopaparazziPlugin instance;
+    private static final String                        BACKGROUND_SERVICE_ID = "_geopaparazzi_background_";
+
+    private static final DefaultSessionContextProvider sessionProvider       = new DefaultSessionContextProvider();
+
+    private static GeopaparazziPlugin                  instance;
 
 
     public static GeopaparazziPlugin instance() {
@@ -76,7 +77,6 @@ public class GeopaparazziPlugin
         return instance().images;
     }
 
-    
     // instance *******************************************
 
     public SvgImageRegistryHelper images = new SvgImageRegistryHelper( this );
@@ -85,24 +85,28 @@ public class GeopaparazziPlugin
     public void start( BundleContext context ) throws Exception {
         super.start( context );
         instance = this;
-     
+
         new Job( "Default layers" ) {
-            private DefaultSessionContext           updateContext;
-            private DefaultSessionContextProvider   contextProvider;
-            
+
+            private DefaultSessionContext         updateContext;
+
+            private DefaultSessionContextProvider contextProvider;
+
+
             @Override
             protected IStatus run( IProgressMonitor monitor ) {
                 // sessionContext
                 assert updateContext == null && contextProvider == null;
                 updateContext = new DefaultSessionContext( getClass().getSimpleName() + hashCode() );
                 contextProvider = new DefaultSessionContextProvider() {
+
                     protected DefaultSessionContext newContext( String sessionKey ) {
                         assert sessionKey.equals( updateContext.getSessionKey() );
                         return updateContext;
                     }
                 };
                 SessionContext.addProvider( contextProvider );
-                
+
                 try {
                     sessionProvider.mapContext( updateContext.getSessionKey(), true );
                     initBackgroundLayer();
@@ -121,7 +125,7 @@ public class GeopaparazziPlugin
         instance = null;
     }
 
-    
+
     protected void initBackgroundLayer() {
         // check existing entry
         log.info( "Checking default background layers..." );
@@ -130,7 +134,7 @@ public class GeopaparazziPlugin
         if (catalog.entry( BACKGROUND_SERVICE_ID, monitor ).isPresent()) {
             return;
         }
-        
+
         log.info( "Creating default background layers..." );
         try {
             try (Updater update = catalog.prepareUpdate()) {
@@ -141,31 +145,32 @@ public class GeopaparazziPlugin
                     metadata.setDescription( "Default background for Geopaparazzis" );
                     metadata.setType( "Service" );
                     metadata.setFormats( Sets.newHashSet( "WMS", "WFS" ) );
-                    metadata.setConnectionParams( WmsServiceResolver.createParams( "http://ows.terrestris.de/osm/service/" ) );
-                });
+                    metadata.setConnectionParams( WmsServiceResolver
+                            .createParams( "http://ows.terrestris.de/osm/service/" ) );
+                } );
                 // remove default background service
-                //update.removeEntry( LocalCatalog.WORLD_BACKGROUND_ID );
+                // update.removeEntry( LocalCatalog.WORLD_BACKGROUND_ID );
                 update.commit();
             }
-            
+
             try (UnitOfWork uow = ProjectRepository.newUnitOfWork()) {
                 IMap rootMap = uow.entity( IMap.class, ProjectRepository.ROOT_MAP_ID );
-                
+
                 // remove default layers
                 rootMap.layers.stream().forEach( layer -> uow.removeEntity( layer ) );
-                
+
                 IMetadata md = catalog.entry( BACKGROUND_SERVICE_ID, monitor ).get();
                 IServiceInfo service = (IServiceInfo)AllResolver.instance().resolve( md ).get();
                 for (IResourceInfo res : service.getResources( monitor )) {
-                    if ("OSM-WMS".equalsIgnoreCase( res.getName() ) ) {
-                        uow.createEntity( ILayer.class, null, (ILayer proto) -> {
+                    if ("OSM-WMS".equalsIgnoreCase( res.getName() )) {
+                        uow.createEntity( ILayer.class, null, ( ILayer proto ) -> {
                             proto.parentMap.set( rootMap );
-                            proto.label.set( "Background" );
+                            proto.label.set( res.getName() );
                             proto.description.set( res.getDescription().orElse( null ) );
                             proto.resourceIdentifier.set( AllResolver.resourceIdentifier( res ) );
                             proto.orderKey.set( 1 );
                             return proto;
-                        });
+                        } );
                     }
                 }
                 uow.commit();
