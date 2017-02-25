@@ -17,9 +17,7 @@ import java.util.List;
 import java.io.IOException;
 
 import org.geotools.data.AbstractDataStore;
-import org.geotools.data.AbstractFeatureSource;
 import org.geotools.data.DataStore;
-import org.geotools.data.FeatureListener;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.FeatureWriter;
 import org.geotools.data.Query;
@@ -38,9 +36,10 @@ import org.jgrasstools.gears.io.geopaparazzi.geopap4.DaoNotes;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
-import com.google.common.base.Throwables;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.hydrologis.polymap.geopaparazzi.importer.GPProgressMonitor;
-import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
 
@@ -54,6 +53,8 @@ public class GPDataStore
         extends AbstractDataStore
         implements DataStore {
 
+    private static final Log log = LogFactory.getLog( GPDataStore.class );
+    
     private SqliteDb        db;
 
 
@@ -86,108 +87,51 @@ public class GPDataStore
         GPProgressMonitor pm = new GPProgressMonitor( new NullProgressMonitor() );
         switch (typeName) {
             case GeopaparazziUtilities.SIMPLE_NOTES: {
-                return new GPFeatureSource() {
-
+                return new GPFeatureSource( this ) {
                     @Override
                     protected SimpleFeatureCollection doGetFeatures() throws Exception {
                         return OmsGeopaparazzi4Converter.simpleNotes2featurecollection( conn, pm );
                     }
-
-
                     @Override
-                    public ReferencedEnvelope getBounds() throws IOException {
-                        try {
-                            IJGTConnection connection = db.getConnection();
-                            ReferencedEnvelope envelope = DaoNotes.getEnvelope( connection, null );
-                            if (envelope == null) {
-                                return GPUtilities.WORLD;
-                            }
-                            return envelope;
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        return GPUtilities.WORLD;
+                    public ReferencedEnvelope doGetBounds() throws Exception {
+                        return DaoNotes.getEnvelope( conn, null );
                     }
                 };
             }
             case GeopaparazziUtilities.GPS_LOGS: {
-                return new GPFeatureSource() {
-
+                return new GPFeatureSource( this ) {
                     @Override
                     protected SimpleFeatureCollection doGetFeatures() throws Exception {
                         List<GpsLog> gpsLogsList = OmsGeopaparazzi4Converter.getGpsLogsList( conn );
                         return OmsGeopaparazzi4Converter.getLogLinesFeatureCollection( pm, gpsLogsList );
                     }
-
-
                     @Override
-                    public ReferencedEnvelope getBounds() throws IOException {
-                        try {
-                            IJGTConnection connection = db.getConnection();
-                            ReferencedEnvelope envelope = DaoGpsLog.getEnvelope( connection );
-                            if (envelope == null) {
-                                return GPUtilities.WORLD;
-                            }
-                            return envelope;
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        return GPUtilities.WORLD;
+                    public ReferencedEnvelope doGetBounds() throws Exception {
+                        return DaoGpsLog.getEnvelope( conn );
                     }
                 };
             }
             case GeopaparazziUtilities.MEDIA_NOTES: {
-                return new GPFeatureSource() {
-
+                return new GPFeatureSource( this ) {
                     @Override
                     protected SimpleFeatureCollection doGetFeatures() throws Exception {
                         return OmsGeopaparazzi4Converter.media2IdBasedFeatureCollection( conn, pm );
                     }
-
-
                     @Override
-                    public ReferencedEnvelope getBounds() throws IOException {
-                        try {
-                            IJGTConnection connection = db.getConnection();
-                            ReferencedEnvelope envelope = DaoImages.getEnvelope( connection );
-                            if (envelope == null) {
-                                return GPUtilities.WORLD;
-                            }
-                            return envelope;
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        return GPUtilities.WORLD;
+                    public ReferencedEnvelope doGetBounds() throws Exception {
+                        return DaoImages.getEnvelope( conn );
                     }
                 };
-
             }
             default: {
-                return new GPFeatureSource() {
-
+                return new GPFeatureSource( this ) {
                     @Override
                     protected SimpleFeatureCollection doGetFeatures() throws Exception {
                         return OmsGeopaparazzi4Converter.complexNote2featurecollection( typeName, conn, pm );
                     }
-
-
                     @Override
-                    public ReferencedEnvelope getBounds() throws IOException {
-                        try {
-                            IJGTConnection connection = db.getConnection();
-                            ReferencedEnvelope envelope = DaoNotes.getEnvelope( connection, typeName );
-                            if (envelope == null) {
-                                return GPUtilities.WORLD;
-                            }
-                            return envelope;
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        return GPUtilities.WORLD;
+                    public ReferencedEnvelope doGetBounds() throws Exception {
+                        return DaoNotes.getEnvelope( conn, typeName );
                     }
                 };
             }
@@ -201,22 +145,22 @@ public class GPDataStore
     }
 
 
-    @Override
-    protected ReferencedEnvelope getBounds( Query query ) throws IOException {
-        throw new RuntimeException( "not implemented." );
-    }
-
-
-    private void expandEnvelope( ReferencedEnvelope envelope, ReferencedEnvelope tmp ) {
-        if (tmp != null) {
-            if (envelope != null) {
-                envelope.expandToInclude( tmp );
-            }
-            else {
-                envelope = tmp;
-            }
-        }
-    }
+//    @Override
+//    protected ReferencedEnvelope getBounds( Query query ) throws IOException {
+//        throw new RuntimeException( "not implemented." );
+//    }
+//
+//
+//    private void expandEnvelope( ReferencedEnvelope envelope, ReferencedEnvelope tmp ) {
+//        if (tmp != null) {
+//            if (envelope != null) {
+//                envelope.expandToInclude( tmp );
+//            }
+//            else {
+//                envelope = tmp;
+//            }
+//        }
+//    }
 
 
     // @Override
@@ -242,58 +186,6 @@ public class GPDataStore
             Transaction transaction )
             throws IOException {
         throw new RuntimeException( "not implemented." );
-    }
-
-
-    /**
-     * 
-     */
-    public abstract class GPFeatureSource
-            extends AbstractFeatureSource {
-
-        protected abstract SimpleFeatureCollection doGetFeatures() throws Exception;
-
-
-        @Override
-        public SimpleFeatureType getSchema() {
-            // XXX GeopaparazziUtilities.getSimpleNotesfeatureType( );
-            try {
-                return getFeatures( new Query() ).getSchema();
-            }
-            catch (IOException e) {
-                throw new RuntimeException( e );
-            }
-        }
-
-
-        @Override
-        public SimpleFeatureCollection getFeatures( Query query ) throws IOException {
-            try {
-                return doGetFeatures();
-            }
-            catch (Exception e) {
-                Throwables.propagateIfInstanceOf( e, IOException.class );
-                throw Throwables.propagate( e );
-            }
-        }
-
-
-        @Override
-        public DataStore getDataStore() {
-            return GPDataStore.this;
-        }
-
-
-        @Override
-        public void addFeatureListener( FeatureListener listener ) {
-            throw new RuntimeException( "not yet implemented." );
-        }
-
-
-        @Override
-        public void removeFeatureListener( FeatureListener listener ) {
-            throw new RuntimeException( "not yet implemented." );
-        }
     }
 
 }
