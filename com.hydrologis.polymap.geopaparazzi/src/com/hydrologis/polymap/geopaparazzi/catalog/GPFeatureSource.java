@@ -79,7 +79,7 @@ public abstract class GPFeatureSource
         return schema.get( () -> {
             try {
                 // XXX GeopaparazziUtilities.getSimpleNotesfeatureType( );
-                return getFeatures( new Query() ).getSchema();
+                return getFeatures( Query.ALL ).getSchema();
             }
             catch (IOException e) {
                 throw new RuntimeException( e );
@@ -92,7 +92,7 @@ public abstract class GPFeatureSource
     public ReferencedEnvelope getBounds( Query query ) throws IOException {
         return bounds.get( query, key -> {
             try {
-                // does no handle query/filer
+                // XXX does no handle query/filer
                 //ReferencedEnvelope envelope = doGetBounds();
                 
                 ReferencedEnvelope envelope = DataUtilities.bounds( getFeatures( query ) );
