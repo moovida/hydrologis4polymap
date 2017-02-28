@@ -28,6 +28,7 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.collection.BaseSimpleFeatureCollection;
 import org.geotools.feature.collection.DelegateSimpleFeatureIterator;
 import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
@@ -52,6 +53,9 @@ public abstract class GPFeatureSource
         extends AbstractFeatureSource {
 
     private static final Log log = LogFactory.getLog( GPFeatureSource.class );
+    
+    /** Pass {@link SqliteDb} in user data of the features. */
+    public static final String              USER_DATA_KEY_DB = "db";
     
     private GPDataStore                     ds;
     
@@ -136,7 +140,13 @@ public abstract class GPFeatureSource
                 if (query.getMaxFeatures() > 0) {
                     result = Iterators.limit( result, query.getMaxFeatures() );
                 }
-                result = Iterators.filter( result, f -> query.getFilter().evaluate( f ) );
+                result = Iterators.filter( result, f -> { 
+                    return query.getFilter().evaluate( f ); 
+                });
+                result = Iterators.transform( result, f -> {
+                    f.getUserData().put( USER_DATA_KEY_DB, ds.db() );
+                    return f;
+                });
                 return new DelegateSimpleFeatureIterator( result );
             }
         };

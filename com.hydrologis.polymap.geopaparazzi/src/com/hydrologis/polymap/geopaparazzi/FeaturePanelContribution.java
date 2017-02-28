@@ -24,7 +24,7 @@ import org.opengis.feature.Property;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.hydrologis.polymap.geopaparazzi.catalog.GPServiceInfo;
+import com.hydrologis.polymap.geopaparazzi.catalog.GPFeatureSource;
 import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 
 import org.eclipse.swt.graphics.Image;
@@ -56,11 +56,11 @@ public class FeaturePanelContribution
                 FeaturePanel panel = (FeaturePanel)site.panel();
                 Feature feature = panel.feature();
                 Property prop = feature.getProperty( GeopaparazziUtilities.IMAGES_imageidFN );
-                // is this the media layer?
+                // true for media layer
                 if (prop != null && prop.getValue() != null) {
                     Long imageId = (Long)prop.getValue();
 
-                    SqliteDb db = GPServiceInfo.globalDb;
+                    SqliteDb db = (SqliteDb)feature.getUserData().get( GPFeatureSource.USER_DATA_KEY_DB );
                     byte[] imageData = DaoImages.getImageData( db.getConnection(), imageId );
                     log.info( "Image data bytes: " + imageData.length );
 
@@ -73,7 +73,6 @@ public class FeaturePanelContribution
                     BufferedImage scaledImage = GPUtilities
                             .scaleImageFromStream( l, new ByteArrayInputStream( imageData ), false, maxSize );
                     Image swtImage = GPUtilities.buffered2SwtImage( scaledImage, l.getDisplay() );
-
                     l.setImage( swtImage );
                 }
             }
