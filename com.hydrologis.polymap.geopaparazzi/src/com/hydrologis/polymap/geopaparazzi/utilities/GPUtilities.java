@@ -15,6 +15,7 @@ package com.hydrologis.polymap.geopaparazzi.utilities;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -28,6 +29,7 @@ import javax.imageio.ImageIO;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.jgrasstools.dbs.compat.IJGTConnection;
+import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
 import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
 import org.jgrasstools.gears.utils.StringUtilities;
 import org.jgrasstools.gears.utils.files.FileUtilities;
@@ -72,11 +74,13 @@ import org.polymap.p4.P4Plugin;
 
 public class GPUtilities {
 
-    private static final Log                      log   = LogFactory.getLog( GPUtilities.class );
+    private static final Log                      log                = LogFactory.getLog( GPUtilities.class );
 
-    public static final CoordinateReferenceSystem WGS84 = DefaultGeographicCRS.WGS84;
+    public static final CoordinateReferenceSystem WGS84              = DefaultGeographicCRS.WGS84;
 
-    public static final ReferencedEnvelope        WORLD = new ReferencedEnvelope( -180, 180, -85, 85, WGS84 );
+    public static final ReferencedEnvelope        WORLD              = new ReferencedEnvelope( -180, 180, -85, 85, WGS84 );
+
+    public static final String                    EXTENDED_LAYER_SEP = "@";
 
 
     /**
@@ -88,7 +92,9 @@ public class GPUtilities {
      * @return the feature style for the layer.
      * @throws Exception
      */
-    public static FeatureStyle getFeatureStyle4Layer( String layerName, IJGTConnection connection ) throws Exception {
+    public static FeatureStyle getFeatureStyle4Layer( String extendedLayerName, IJGTConnection connection ) throws Exception {
+        String layerName = GPUtilities.extendedName2layerName( extendedLayerName );
+        
         switch (layerName) {
             case GeopaparazziUtilities.SIMPLE_NOTES:
                 return getSimpleNotesStyle();
@@ -322,5 +328,29 @@ public class GPUtilities {
             }
         }
         return new Image( device, data );
+    }
+
+
+    public static String dbNameForLayerExtension( SqliteDb db ) {
+        File dbFile = new File( db.getDatabasePath() );
+        String dbName = FileUtilities.getNameWithoutExtention( dbFile );
+        if (dbName.startsWith( "geopaparazzi_" )) {
+            dbName = dbName.replaceFirst( "geopaparazzi_", "" );
+        }
+        dbName = EXTENDED_LAYER_SEP + dbName;
+        return dbName;
+    }
+
+
+    public static String extendedName2layerName( String extendedName ) {
+        String name = extendedName.split( EXTENDED_LAYER_SEP )[0];
+        return name;
+    }
+
+
+    public static List<String> toExtendedNamesList( List<String> layerNamesList, String dbExtentionName ) {
+        List<String> extendedLayerList = layerNamesList.stream().map( s -> s + dbExtentionName ).collect( Collectors
+                .toList() );
+        return extendedLayerList;
     }
 }

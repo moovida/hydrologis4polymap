@@ -40,6 +40,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.hydrologis.polymap.geopaparazzi.importer.GPProgressMonitor;
+import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
 
@@ -54,15 +55,18 @@ public class GPDataStore
         implements DataStore {
 
     private static final Log log = LogFactory.getLog( GPDataStore.class );
-    
-    private SqliteDb        db;
+
+    private SqliteDb         db;
+
+    private String           dbName4Extension;
 
 
     public GPDataStore( SqliteDb db ) {
         this.db = db;
+        dbName4Extension = GPUtilities.dbNameForLayerExtension( db );
     }
 
-    
+
     public SqliteDb db() {
         return db;
     }
@@ -72,7 +76,9 @@ public class GPDataStore
     public String[] getTypeNames() throws IOException {
         try {
             List<String> layerNamesList = GeopaparazziUtilities.getLayerNamesList( db.getConnection() );
-            return layerNamesList.toArray( new String[0] );
+
+            List<String> extendedLayerList = GPUtilities.toExtendedNamesList( layerNamesList, dbName4Extension );
+            return extendedLayerList.toArray( new String[0] );
         }
         catch (Exception e) {
             throw new IOException( e );
@@ -81,17 +87,21 @@ public class GPDataStore
 
 
     @Override
-    public SimpleFeatureSource getFeatureSource( String typeName ) throws IOException {
+    public SimpleFeatureSource getFeatureSource( String extendedTypeName ) throws IOException {
         IJGTConnection conn = db.getConnection();
 
+        String typeName = GPUtilities.extendedName2layerName( extendedTypeName );
         GPProgressMonitor pm = new GPProgressMonitor( new NullProgressMonitor() );
         switch (typeName) {
             case GeopaparazziUtilities.SIMPLE_NOTES: {
                 return new GPFeatureSource( this ) {
+
                     @Override
                     protected SimpleFeatureCollection doGetFeatures() throws Exception {
                         return OmsGeopaparazzi4Converter.simpleNotes2featurecollection( conn, pm );
                     }
+
+
                     @Override
                     public ReferencedEnvelope doGetBounds() throws Exception {
                         return DaoNotes.getEnvelope( conn, null );
@@ -100,11 +110,14 @@ public class GPDataStore
             }
             case GeopaparazziUtilities.GPS_LOGS: {
                 return new GPFeatureSource( this ) {
+
                     @Override
                     protected SimpleFeatureCollection doGetFeatures() throws Exception {
                         List<GpsLog> gpsLogsList = OmsGeopaparazzi4Converter.getGpsLogsList( conn );
                         return OmsGeopaparazzi4Converter.getLogLinesFeatureCollection( pm, gpsLogsList );
                     }
+
+
                     @Override
                     public ReferencedEnvelope doGetBounds() throws Exception {
                         return DaoGpsLog.getEnvelope( conn );
@@ -113,10 +126,13 @@ public class GPDataStore
             }
             case GeopaparazziUtilities.MEDIA_NOTES: {
                 return new GPFeatureSource( this ) {
+
                     @Override
                     protected SimpleFeatureCollection doGetFeatures() throws Exception {
                         return OmsGeopaparazzi4Converter.media2IdBasedFeatureCollection( conn, pm );
                     }
+
+
                     @Override
                     public ReferencedEnvelope doGetBounds() throws Exception {
                         return DaoImages.getEnvelope( conn );
@@ -125,10 +141,13 @@ public class GPDataStore
             }
             default: {
                 return new GPFeatureSource( this ) {
+
                     @Override
                     protected SimpleFeatureCollection doGetFeatures() throws Exception {
                         return OmsGeopaparazzi4Converter.complexNote2featurecollection( typeName, conn, pm );
                     }
+
+
                     @Override
                     public ReferencedEnvelope doGetBounds() throws Exception {
                         return DaoNotes.getEnvelope( conn, typeName );
@@ -144,23 +163,23 @@ public class GPDataStore
         return getFeatureSource( typeName ).getSchema();
     }
 
-
-//    @Override
-//    protected ReferencedEnvelope getBounds( Query query ) throws IOException {
-//        throw new RuntimeException( "not implemented." );
-//    }
-//
-//
-//    private void expandEnvelope( ReferencedEnvelope envelope, ReferencedEnvelope tmp ) {
-//        if (tmp != null) {
-//            if (envelope != null) {
-//                envelope.expandToInclude( tmp );
-//            }
-//            else {
-//                envelope = tmp;
-//            }
-//        }
-//    }
+    // @Override
+    // protected ReferencedEnvelope getBounds( Query query ) throws IOException {
+    // throw new RuntimeException( "not implemented." );
+    // }
+    //
+    //
+    // private void expandEnvelope( ReferencedEnvelope envelope, ReferencedEnvelope
+    // tmp ) {
+    // if (tmp != null) {
+    // if (envelope != null) {
+    // envelope.expandToInclude( tmp );
+    // }
+    // else {
+    // envelope = tmp;
+    // }
+    // }
+    // }
 
 
     // @Override

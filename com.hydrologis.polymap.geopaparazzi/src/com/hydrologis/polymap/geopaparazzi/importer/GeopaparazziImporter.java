@@ -305,7 +305,9 @@ public class GeopaparazziImporter
         // create new layer(s) for resource(s)
         BatikApplication.instance().getContext().propagate( this );
         for (IResourceInfo res : serviceInfo.get().getResources( monitor )) {
-            String name = res.getName();
+            String extendedName = res.getName();
+            
+            String name = GPUtilities.extendedName2layerName(extendedName);
 
             FeatureStyle featureStyle4Layer = GPUtilities.getFeatureStyle4Layer( name, db.getConnection() );
             if (featureStyle4Layer == null) {
@@ -314,7 +316,7 @@ public class GeopaparazziImporter
             }
 
             NewLayerOperation op = new NewLayerOperation()
-                    .label.put( name )
+                    .label.put( extendedName )
                     .res.put( res )
                     .featureStyle.put( featureStyle4Layer )
                     .uow.put( ProjectRepository.unitOfWork() )
