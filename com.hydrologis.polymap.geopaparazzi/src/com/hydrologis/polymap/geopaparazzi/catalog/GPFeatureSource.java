@@ -92,9 +92,17 @@ public abstract class GPFeatureSource
     }
 
 
+    protected Query cacheKey( Query query ) {
+        if (query.getStartIndex() == null) {
+            // fixing bug in Query.hashCode()
+            query.setStartIndex( 0 );
+        }
+        return query;        
+    }
+    
     @Override
     public ReferencedEnvelope getBounds( Query query ) throws IOException {
-        return bounds.get( query, key -> {
+        return bounds.get( cacheKey( query ), key -> {
             try {
                 // XXX does no handle query/filer
                 //ReferencedEnvelope envelope = doGetBounds();
@@ -112,7 +120,7 @@ public abstract class GPFeatureSource
 
     @Override
     public int getCount( Query query ) throws IOException {
-        return count.get( query, key -> {
+        return count.get( cacheKey( query ), key -> {
             return getFeatures( key ).size();
         });
     }
