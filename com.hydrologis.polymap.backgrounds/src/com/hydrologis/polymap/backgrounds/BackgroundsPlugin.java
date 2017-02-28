@@ -150,6 +150,9 @@ public class BackgroundsPlugin
             if (service.length() == 0) {
                 continue;
             }
+            if (service.startsWith("#")) {
+                continue;
+            }
             String serviceId = service.split( ";" )[0];
             if (!catalog.entry( serviceId, monitor ).isPresent()) {
                 keptServices.add( service );
