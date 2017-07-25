@@ -100,6 +100,7 @@ public class JgtModuleInfo
     @Override
     public void execute( Object module, IProgressMonitor monitor ) {
         assert module instanceof JGTModel;
+        ((JGTModel)module).pm = new JgtProgressMonitorAdapter( monitor );
         ComponentAccess.callAnnotated( module, Initialize.class, true );
         ComponentAccess.callAnnotated( module, Execute.class, false );
         ComponentAccess.callAnnotated( module, Finalize.class, true );
