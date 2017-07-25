@@ -33,10 +33,10 @@ import oms3.annotations.Range;
 @Description("A background processing test.")
 @Label("Background processing test")
 @Name("Background processing test")
-public class ATestModule 
+public class JgtTestModule 
         extends JGTModel {
 
-    private static final Log log = LogFactory.getLog( ATestModule.class );
+    private static final Log log = LogFactory.getLog( JgtTestModule.class );
 
     @In
     @Description("An integer input (1 <= value <= 100).")
