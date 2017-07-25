@@ -54,8 +54,10 @@ public class JgtModuleInfo
     /** All fields of this module. */
     private Lazy<FluentIterable<FieldInfo>> fields = new PlainLazyInit( () ->
             FluentIterable.of( type.getFields() )
-                    .filter( field -> !IJGTProgressMonitor.class.isAssignableFrom( field.getType() ) )
-                    .transform( f -> new JgtFieldInfo( f ) ) );
+                    .filter( f -> !IJGTProgressMonitor.class.isAssignableFrom( f.getType() ) )
+                    .transform( f -> new JgtFieldInfo( f ) )
+                    // prevent 'internal' fields to be shown to the user
+                    .filter( f -> f.description().isPresent() ) );
     
     
     protected JgtModuleInfo( Class<?> type ) {
