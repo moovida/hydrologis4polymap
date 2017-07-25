@@ -1,13 +1,15 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: JGrasstools
-Bundle-SymbolicName: com.hydrologis.polymap.jgt
+Bundle-SymbolicName: com.hydrologis.polymap.jgt;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Vendor: HYDROLOGIS
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.polymap.core;bundle-version="4.0.0",
- org.polymap.core.data;bundle-version="4.0.0",
- org.polymap.rhei.batik;bundle-version="4.0.0"
+ org.polymap.core.data;bundle-version="4.0.1",
+ org.polymap.core.project,
+ org.polymap.rhei.batik;bundle-version="4.0.0",
+ org.polymap.p4;bundle-version="1.0.1"
 Bundle-ClassPath: .,
  lib/gt-process-16.1.jar,
  lib/jgt-dbs-0.8.1.jar,

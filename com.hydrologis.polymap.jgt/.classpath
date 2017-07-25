@@ -3,7 +3,7 @@
 	<classpathentry exported="true" kind="lib" path="lib/scannotation-1.0.3.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jgt-dbs-0.8.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jgt-hortonmachine-0.8.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/jgt-jgrassgears-0.8.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jgt-jgrassgears-0.8.1.jar" sourcepath="lib/sources/jgt-jgrassgears-0.8.1-sources.zip"/>
 	<classpathentry exported="true" kind="lib" path="lib/jgt-lesto-0.8.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jgt-modules-0.8.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jgt-oms3-0.8.1.jar"/>
