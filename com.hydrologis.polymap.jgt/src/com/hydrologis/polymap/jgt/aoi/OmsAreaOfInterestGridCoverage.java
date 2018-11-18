@@ -25,9 +25,6 @@ import org.jgrasstools.gears.utils.RegionMap;
 import org.jgrasstools.gears.utils.coverage.CoverageUtilities;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
@@ -46,8 +43,6 @@ import oms3.annotations.Range;
 @Name("Area of interest")
 public class OmsAreaOfInterestGridCoverage extends JGTModel {
 
-    private static final Log log = LogFactory.getLog(OmsAreaOfInterestGridCoverage.class);
-
     @In
     @Description("The source raster data.")
     public GridCoverage2DReader inCoverageReader;
@@ -65,6 +60,7 @@ public class OmsAreaOfInterestGridCoverage extends JGTModel {
     @Out
     public GridCoverage2D outCoverage;
 
+    
     @Execute
     public void process() throws Exception {
         CoordinateReferenceSystem crs = inCoverageReader.getCoordinateReferenceSystem();
