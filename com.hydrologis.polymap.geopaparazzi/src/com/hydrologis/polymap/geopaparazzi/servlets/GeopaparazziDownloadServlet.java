@@ -1,5 +1,6 @@
 /*
- * polymap.org Copyright (C) 2017, the @authors. All rights reserved.
+ * polymap.org 
+ * Copyright (C) 2017, the @authors. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it under the terms of
  * the GNU Lesser General Public License as published by the Free Software
@@ -43,38 +44,30 @@ public class GeopaparazziDownloadServlet
     @Override
     protected void doPost( HttpServletRequest request, HttpServletResponse response )
             throws ServletException, IOException {
-        // String authHeader = request.getHeader("Authorization");
-        //
-        // String[] userPwd =
-        // StageUtils.getUserPwdWithBasicAuthentication(authHeader);
-        // if (userPwd == null || !LoginChecker.isLoginOk(userPwd[0], userPwd[1])) {
-        // throw new ServletException("No permission!");
-        // }
-
-        // File geopaparazziFolder =
-        // StageWorkspace.getInstance().getGeopaparazziFolder(userPwd[0]);
-
         // TODO change this to be more solid and separated for users
         File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
 
-        String projectFileName = "";
-        FileInputStream inputStream = null;
-        ServletOutputStream outputStream = null;
-        try {
-            Map<String, String[]> parms = request.getParameterMap();
-            String[] idParams = parms.get("id");
-            if (idParams != null && idParams.length == 1) {
-                projectFileName = idParams[0];
-                inputStream = new FileInputStream(new File(gpapProjectsFolder, projectFileName));
+        // check 'id' param
+        Map<String,String[]> parms = request.getParameterMap();
+        String[] idParams = parms.get( "name" );
+        if (idParams == null || idParams.length == 0) {
+            response.sendError( 401, "No 'name' param given. This param specifies the name of the database." );
+        }
+        else if (idParams.length > 1) {
+            response.sendError( 401, "Too many values for params 'name'. This param specifies the name of the database." );
+        }
+        // copy contents
+        else {
+            String projectFileName = idParams[0];
+            try (
+                FileInputStream in = new FileInputStream( new File( gpapProjectsFolder, projectFileName ) );
+                ServletOutputStream out = response.getOutputStream();
+            ){
                 String mimeType = "application/octet-stream";
-                response.setContentType(mimeType);
-                response.setHeader("Content-disposition", "attachment; filename=" + projectFileName);
-                outputStream = response.getOutputStream();
-                IOUtils.copy(inputStream, outputStream);
+                response.setContentType( mimeType );
+                response.setHeader( "Content-disposition", "attachment; filename=" + projectFileName );
+                IOUtils.copy( in, out );
             }
-        } finally {
-            IOUtils.closeQuietly(inputStream);
-            IOUtils.closeQuietly(outputStream);
         }
     }
 }

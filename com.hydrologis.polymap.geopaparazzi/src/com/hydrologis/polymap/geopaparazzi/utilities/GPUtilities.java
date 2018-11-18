@@ -26,6 +26,7 @@ import java.io.InputStream;
 
 import javax.imageio.ImageIO;
 
+import org.geotools.feature.NameImpl;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.jgrasstools.dbs.compat.IJGTConnection;
@@ -35,6 +36,7 @@ import org.jgrasstools.gears.utils.StringUtilities;
 import org.jgrasstools.gears.utils.files.FileUtilities;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.GeometryDescriptor;
+import org.opengis.feature.type.Name;
 import org.opengis.feature.type.PropertyDescriptor;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
@@ -52,6 +54,7 @@ import org.eclipse.swt.widgets.Control;
 
 import org.polymap.core.CorePlugin;
 import org.polymap.core.style.model.FeatureStyle;
+import org.polymap.core.style.model.feature.AttributeValue;
 import org.polymap.core.style.model.feature.ConstantColor;
 import org.polymap.core.style.model.feature.ConstantFontFamily;
 import org.polymap.core.style.model.feature.ConstantFontStyle;
@@ -66,7 +69,6 @@ import org.polymap.core.style.model.feature.FontStyle;
 import org.polymap.core.style.model.feature.FontWeight;
 import org.polymap.core.style.model.feature.LineStyle;
 import org.polymap.core.style.model.feature.PointStyle;
-import org.polymap.core.style.model.feature.PropertyString;
 import org.polymap.core.style.model.feature.Stroke;
 import org.polymap.core.style.model.feature.TextStyle;
 
@@ -169,7 +171,7 @@ public class GPUtilities {
         font.size.createValue( ConstantNumber.defaults( 12.0 ) );
         text.color.createValue( ConstantColor.defaults( Color.BLUE ) );
 
-        text.property.createValue( PropertyString.defaults( GeopaparazziUtilities.NOTES_textFN ) );
+        text.property.createValue( AttributeValue.defaults( GeopaparazziUtilities.NOTES_textFN, null, null ) );
 
         return featureStyle;
     }
@@ -202,7 +204,7 @@ public class GPUtilities {
         font.weight.createValue( ConstantFontWeight.defaults() );
         font.size.createValue( ConstantNumber.defaults( 12.0 ) );
         text.color.createValue( ConstantColor.defaults( darkRed ) );
-        text.property.createValue( PropertyString.defaults( GeopaparazziUtilities.IMAGES_imageidFN ) );
+        text.property.createValue( AttributeValue.defaults( GeopaparazziUtilities.IMAGES_imageidFN, null, null ) );
 
         return featureStyle;
     }
@@ -227,7 +229,7 @@ public class GPUtilities {
         font.size.createValue( ConstantNumber.defaults( 12.0 ) );
         text.color.createValue( ConstantColor.defaults( Color.ORANGE ) );
 
-        text.property.createValue( PropertyString.defaults( GeopaparazziUtilities.GPSLOG_descrFN ) );
+        text.property.createValue( AttributeValue.defaults( GeopaparazziUtilities.GPSLOG_descrFN, null, null ) );
 
         return featureStyle;
     }
@@ -239,7 +241,8 @@ public class GPUtilities {
         for (PropertyDescriptor descriptor : schemaDescriptors) {
             if (geometryDescriptor == null || !geometryDescriptor.equals( descriptor )) {
                 if (String.class.isAssignableFrom( descriptor.getType().getBinding() )) {
-                    text.property.createValue( PropertyString.defaults( descriptor.getName().getLocalPart() ) );
+                    text.property.createValue( AttributeValue.defaults( descriptor.getName().getLocalPart(), null, null ) );
+                    //text.property.createValue( PropertyString.defaults( descriptor.getName().getLocalPart() ) );
                     break;
                 }
             }
@@ -348,9 +351,10 @@ public class GPUtilities {
     }
 
 
-    public static List<String> toExtendedNamesList( List<String> layerNamesList, String dbExtentionName ) {
-        List<String> extendedLayerList = layerNamesList.stream().map( s -> s + dbExtentionName ).collect( Collectors
-                .toList() );
-        return extendedLayerList;
+    public static List<Name> toExtendedNamesList( List<String> layerNamesList, String dbExtentionName ) {
+        return layerNamesList.stream()
+                .map( s -> s + dbExtentionName )
+                .map( s -> new NameImpl( s ) )
+                .collect( Collectors.toList() );
     }
 }

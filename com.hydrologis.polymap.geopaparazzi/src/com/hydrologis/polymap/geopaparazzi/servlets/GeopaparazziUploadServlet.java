@@ -1,5 +1,6 @@
 /*
- * polymap.org Copyright (C) 2017, the @authors. All rights reserved.
+ * polymap.org 
+ * Copyright (C) 2017-2018, the @authors. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it under the terms of
  * the GNU Lesser General Public License as published by the Free Software
@@ -32,6 +33,7 @@ import org.jgrasstools.gears.utils.files.FileUtilities;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
 import com.hydrologis.polymap.geopaparazzi.catalog.GPServiceInfo;
 import com.hydrologis.polymap.geopaparazzi.catalog.GPServiceResolver;
@@ -53,6 +55,11 @@ import org.polymap.p4.P4Plugin;
 import org.polymap.p4.catalog.AllResolver;
 import org.polymap.p4.project.ProjectRepository;
 
+/**
+ * 
+ * 
+ * @author Falko Bräutigam
+ */
 public class GeopaparazziUploadServlet
         extends HttpServlet {
 
@@ -82,17 +89,6 @@ public class GeopaparazziUploadServlet
     @Override
     protected void doPost( HttpServletRequest request, HttpServletResponse response )
             throws ServletException, IOException {
-        // String authHeader = request.getHeader("Authorization");
-        //
-        // String[] userPwd =
-        // StageUtils.getUserPwdWithBasicAuthentication(authHeader);
-        // if (userPwd == null || !LoginChecker.isLoginOk(userPwd[0], userPwd[1])) {
-        // throw new ServletException("No permission!");
-        // }
-
-        // File geopaparazziFolder =
-        // StageWorkspace.getInstance().getGeopaparazziFolder(userPwd[0]);
-
         // TODO change this to be more solid and separated for users
         File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
 
@@ -134,7 +130,7 @@ public class GeopaparazziUploadServlet
     }
 
 
-    private void addToCatalog( File dbFile ) throws Exception {
+    protected void addToCatalog( File dbFile ) throws Exception {
         AtomicReference<GPServiceInfo> serviceInfo = new AtomicReference();
         NullProgressMonitor monitor = new NullProgressMonitor();
 
@@ -197,7 +193,7 @@ public class GeopaparazziUploadServlet
             uow.commit();
         }
         catch (Exception e) {
-            throw new RuntimeException( e );
+            throw Throwables.propagate( e );
         }
     }
 }

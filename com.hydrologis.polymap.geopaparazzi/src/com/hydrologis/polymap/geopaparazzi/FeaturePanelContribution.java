@@ -15,7 +15,7 @@ package com.hydrologis.polymap.geopaparazzi;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 
-import org.jgrasstools.dbs.spatialite.jgt.SqliteDb;
+import org.jgrasstools.dbs.compat.IJGTConnection;
 import org.jgrasstools.gears.io.geopaparazzi.GeopaparazziUtilities;
 import org.jgrasstools.gears.io.geopaparazzi.geopap4.DaoImages;
 import org.opengis.feature.Feature;
@@ -24,12 +24,15 @@ import org.opengis.feature.Property;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.hydrologis.polymap.geopaparazzi.catalog.GPFeatureSource;
+import com.hydrologis.polymap.geopaparazzi.catalog.GPDataStore;
 import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+
+import org.polymap.core.data.PipelineFeatureSource;
+import org.polymap.core.data.pipeline.DataSourceDescriptor;
 
 import org.polymap.rhei.batik.contribution.IContributionSite;
 import org.polymap.rhei.batik.contribution.IPanelContribution;
@@ -59,9 +62,14 @@ public class FeaturePanelContribution
                 // true for media layer
                 if (prop != null && prop.getValue() != null) {
                     Long imageId = (Long)prop.getValue();
+                    
+                    // get db connection from underlying datasource
+                    PipelineFeatureSource pfs = ((PipelineFeatureSource)panel.fs());
+                    DataSourceDescriptor dsd = pfs.pipeline().dataSourceDescription();
+                    GPDataStore ds = (GPDataStore)dsd.service.get();
 
-                    SqliteDb db = (SqliteDb)feature.getUserData().get( GPFeatureSource.USER_DATA_KEY_DB );
-                    byte[] imageData = DaoImages.getImageData( db.getConnection(), imageId );
+                    IJGTConnection conn = ds.db().getConnection();
+                    byte[] imageData = DaoImages.getImageData( conn, imageId );
                     log.info( "Image data bytes: " + imageData.length );
 
                     Label l = site.toolkit().createLabel( parent, null );

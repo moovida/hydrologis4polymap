@@ -45,7 +45,6 @@ import org.polymap.core.catalog.resolve.IServiceInfo;
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-@SuppressWarnings( "deprecation" )
 public class GPServiceInfo
         implements IServiceInfo {
 

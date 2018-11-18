@@ -1,5 +1,6 @@
 /*
- * polymap.org Copyright (C) 2015, Falko Bräutigam. All rights reserved.
+ * polymap.org 
+ * Copyright (C) 2015-2018, Falko Bräutigam. All rights reserved.
  * 
  * This is free software; you can redistribute it and/or modify it under the terms of
  * the GNU Lesser General Public License as published by the Free Software
@@ -80,7 +81,6 @@ import org.polymap.p4.project.ProjectRepository;
  *
  * @author hydrologis
  */
-@SuppressWarnings( "deprecation" )
 public class GeopaparazziImporter
         implements Importer {
 
@@ -198,7 +198,8 @@ public class GeopaparazziImporter
                 createFeatureTable( tableParent, typeName );
             }
             catch (Exception e) {
-                tk.createFlowText( parent, "\nUnable to read the data.\n\n**Reason**: " + exception.getMessage() );
+                log.warn( "", e );
+                tk.createFlowText( parent, "\nUnable to read the data.\n\n**Reason**: " + e.getMessage() );
                 site.ok.set( false );
                 exception = e;
             }
