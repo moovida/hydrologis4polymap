@@ -236,6 +236,10 @@ public class GPUtilities {
 
 
     private static void setDefaultText( TextStyle text, SimpleFeatureType schema ) {
+        if (schema == null) {
+            log.warn( "No schema! -> no text!" );
+            return;
+        }
         Collection<PropertyDescriptor> schemaDescriptors = schema.getDescriptors();
         GeometryDescriptor geometryDescriptor = schema.getGeometryDescriptor();
         for (PropertyDescriptor descriptor : schemaDescriptors) {

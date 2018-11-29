@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 
 import javax.servlet.ServletException;
@@ -104,8 +103,6 @@ public class GPUploadServlet
             File file = new File( projectsFolder, filename );
             log.info( "Importing new geopaparazzi database: " + file );
 
-            //throwException();
-            
             if (file.exists()) {
                 response.sendError( 409, "File already exists on the server: " + filename );
             }
@@ -121,16 +118,13 @@ public class GPUploadServlet
                 catch (Exception e) {
                     log.error( "Unable to add resource to the catalog.", e );
                     response.sendError( 500, "Error while importing: " + filename );
+                    file.delete();
                 }
                 finally {
                     sessionProvider.unmapContext();
                 }
             }
         });
-    }
-
-    protected void throwException() throws MalformedURLException {
-        throw new MalformedURLException( "TEST!!!" );
     }
 
 
@@ -167,8 +161,7 @@ public class GPUploadServlet
                 catch (Exception e) {
                     throw new RuntimeException( "Unable to resolve imported data source.", e );
                 }
-            } );
-            update.commit();
+            });
 
             // create new layer(s) for resource(s)
             IMap map = uow.entity( IMap.class, ProjectRepository.ROOT_MAP_ID );
@@ -194,6 +187,7 @@ public class GPUploadServlet
             // XXX adapt map extent
             //map.setMaxExtent( ...);
        
+            update.commit();
             uow.commit();
         }
         catch (Exception e) {
