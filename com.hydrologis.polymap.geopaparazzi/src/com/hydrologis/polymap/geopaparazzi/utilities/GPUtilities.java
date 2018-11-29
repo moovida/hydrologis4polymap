@@ -251,13 +251,12 @@ public class GPUtilities {
 
 
     /**
-     * Get the geopaparazzi projects folder.
+     * Get the geopaparazzi projects (data) folder where database files are stored.
      *
      * @return the default folder for geopaparazzi projects.
      */
-    public static File getGeopaparazziProjectsFolder() {
-        File gpapProjectsFolder = CorePlugin.getDataLocation( GeopaparazziPlugin.instance() );
-        return gpapProjectsFolder;
+    public static File projectsFolder() {
+        return CorePlugin.getDataLocation( GeopaparazziPlugin.instance() );
     }
 
 
@@ -268,7 +267,7 @@ public class GPUtilities {
      * @return the safe file.
      */
     public static File getSafeProjectFile( File proposedFile ) {
-        File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
+        File gpapProjectsFolder = GPUtilities.projectsFolder();
         File[] geopaparazziFiles = GeopaparazziUtilities.getGeopaparazziFiles( gpapProjectsFolder );
         List<String> namesNoExt = new ArrayList<>();
         for (File file : geopaparazziFiles) {

@@ -11,18 +11,18 @@
    <extension
          point="org.eclipse.equinox.http.registry.servlets">
       <servlet
-            alias="/gpproject_upload"
-            class="com.hydrologis.polymap.geopaparazzi.servlets.GeopaparazziUploadServlet"
+            alias="/stage_gpproject_upload"
+            class="com.hydrologis.polymap.geopaparazzi.servlets.GPUploadServlet"
             load-on-startup="true">
       </servlet>
       <servlet
-            alias="/gplist_download"
-            class="com.hydrologis.polymap.geopaparazzi.servlets.GeopaparazziProjectListServlet"
+            alias="/stage_gplist_download"
+            class="com.hydrologis.polymap.geopaparazzi.servlets.GPProjectListServlet"
             load-on-startup="true">
       </servlet>
       <servlet
-            alias="/gpproject_download"
-            class="com.hydrologis.polymap.geopaparazzi.servlets.GeopaparazziDownloadServlet"
+            alias="/stage_gpproject_download"
+            class="com.hydrologis.polymap.geopaparazzi.servlets.GPDownloadServlet"
             load-on-startup="true">
       </servlet>
    </extension>

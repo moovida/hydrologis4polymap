@@ -13,11 +13,14 @@
  */
 package com.hydrologis.polymap.geopaparazzi.servlets;
 
+import static com.hydrologis.polymap.geopaparazzi.servlets.GPDownloadServlet.nameParam;
+
 import java.util.concurrent.atomic.AtomicReference;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 
 import javax.servlet.ServletException;
@@ -60,10 +63,10 @@ import org.polymap.p4.project.ProjectRepository;
  * 
  * @author Falko Bräutigam
  */
-public class GeopaparazziUploadServlet
+public class GPUploadServlet
         extends HttpServlet {
 
-    private static final Log log = LogFactory.getLog( GeopaparazziUploadServlet.class );
+    private static final Log log = LogFactory.getLog( GPUploadServlet.class );
 
     private static final DefaultSessionContextProvider sessionProvider = new DefaultSessionContextProvider();
     
@@ -72,7 +75,7 @@ public class GeopaparazziUploadServlet
     private DefaultSessionContextProvider   contextProvider;
 
     
-    public GeopaparazziUploadServlet() {
+    public GPUploadServlet() {
         // sessionContext
         assert updateContext == null && contextProvider == null;
         updateContext = new DefaultSessionContext( getClass().getSimpleName() + hashCode() );
@@ -85,48 +88,49 @@ public class GeopaparazziUploadServlet
         SessionContext.addProvider( contextProvider );
     }
 
+    @Override
+    protected void doPut( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException {
+        doPost( req, resp );
+    }
 
     @Override
     protected void doPost( HttpServletRequest request, HttpServletResponse response )
             throws ServletException, IOException {
         // TODO change this to be more solid and separated for users
-        File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
+        File projectsFolder = GPUtilities.projectsFolder();
+        
+        nameParam( request, response ).ifPresent( filename -> {
+            PrintWriter outWriter = response.getWriter();
+            File file = new File( projectsFolder, filename );
+            log.info( "Importing new geopaparazzi database: " + file );
 
-        String projectFileName = "";
-        String msg = "";
-        PrintWriter outWriter = response.getWriter();
-//        Map<String,String[]> parms = request.getParameterMap();
-        String[] nameParams = request.getParameterValues( "name" );
-        if (nameParams != null && nameParams.length == 1) {
-            projectFileName = nameParams[0];
-            File file = new File( gpapProjectsFolder, projectFileName );
-            log.info( "Importing new gp database: " + file );
-
+            //throwException();
+            
             if (file.exists()) {
-                msg = "File already exists on the server: " + projectFileName;
-                outWriter.write( msg );
-                return;
+                response.sendError( 409, "File already exists on the server: " + filename );
             }
             else {
-                ServletInputStream inputStream = request.getInputStream();
-                Files.copy( inputStream, file.toPath() );
-                msg = "Uploaded file: " + projectFileName;
+                try (ServletInputStream in = request.getInputStream()) {
+                    Files.copy( in, file.toPath() );
+                }
+                try {
+                    sessionProvider.mapContext( updateContext.getSessionKey(), true );
+                    addToCatalog( file );
+                    outWriter.write( "Uploaded file: " + filename );
+                }
+                catch (Exception e) {
+                    log.error( "Unable to add resource to the catalog.", e );
+                    response.sendError( 500, "Error while importing: " + filename );
+                }
+                finally {
+                    sessionProvider.unmapContext();
+                }
             }
+        });
+    }
 
-            try {
-                sessionProvider.mapContext( updateContext.getSessionKey(), true );
-                addToCatalog( file );
-            }
-            catch (Exception e) {
-                log.error( "Unable to add resource to the catalog.", e );
-            }
-            finally {
-                sessionProvider.unmapContext();
-            }
-        }
-
-        outWriter.write( msg );
-
+    protected void throwException() throws MalformedURLException {
+        throw new MalformedURLException( "TEST!!!" );
     }
 
 

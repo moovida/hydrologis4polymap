@@ -226,7 +226,7 @@ public class GeopaparazziImporter
 
 
     private boolean canCopyFile( boolean alsoCopy ) throws IOException {
-        File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
+        File gpapProjectsFolder = GPUtilities.projectsFolder();
         String name = geopapDatabaseFile.getName();
         File newFile = new File( gpapProjectsFolder, name );
         if (newFile.exists()) {

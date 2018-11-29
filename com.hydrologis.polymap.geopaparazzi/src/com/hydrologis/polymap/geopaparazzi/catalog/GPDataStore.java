@@ -35,6 +35,7 @@ import org.jgrasstools.gears.io.geopaparazzi.geopap4.DaoGpsLog.GpsLog;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
+import org.opengis.filter.Filter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -93,7 +94,9 @@ public class GPDataStore
         String typeName = GPUtilities.extendedName2layerName( entry.getTypeName() );
         GPProgressMonitor pm = new GPProgressMonitor( new NullProgressMonitor() );
         try {
+            log.info( "Reading Spatialite DB ..." );
             switch (typeName) {
+                // XXX Cache!
                 case GeopaparazziUtilities.SIMPLE_NOTES: {
                     SimpleFeatureCollection fc = OmsGeopaparazzi4Converter.simpleNotes2featurecollection( conn, pm );
                     return new GPFeatureSource( entry, fc, conn );
@@ -118,7 +121,10 @@ public class GPDataStore
         }
     }
 
-    
+
+    /**
+     * 
+     */
     public static class GPFeatureSource
             extends ContentFeatureSource {
 
@@ -137,17 +143,27 @@ public class GPDataStore
         }
 
         @Override
+        @SuppressWarnings("hiding")
         protected ReferencedEnvelope getBoundsInternal( Query query ) throws IOException {
-            throw new RuntimeException( "not yet implemented." );
+            SimpleFeatureCollection queried = fc;
+            if (query != null && !query.getFilter().equals( Filter.INCLUDE )) {
+                queried = fc.subCollection( query.getFilter() );
+            }
+            return queried.getBounds();
         }
 
         @Override
+        @SuppressWarnings("hiding")
         protected int getCountInternal( Query query ) throws IOException {
-            //assert query == null || query.equals( Query.ALL );
-            return fc.size();
+            SimpleFeatureCollection queried = fc;
+            if (query != null && !query.getFilter().equals( Filter.INCLUDE )) {
+                queried = fc.subCollection( query.getFilter() );
+            }
+            return queried.size();
         }
 
         @Override
+        @SuppressWarnings("hiding")
         protected FeatureReader<SimpleFeatureType,SimpleFeature> getReaderInternal( Query query ) throws IOException {
             return new CollectionFeatureReader( fc, fc.getSchema() );
         }

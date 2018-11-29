@@ -1,5 +1,6 @@
 /*
- * polymap.org Copyright (C) 2017, the @authors. All rights reserved.
+ * polymap.org 
+ * Copyright (C) 2017-2018, the @authors. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it under the terms of
  * the GNU Lesser General Public License as published by the Free Software
@@ -28,10 +29,14 @@ import org.apache.commons.logging.LogFactory;
 
 import com.hydrologis.polymap.geopaparazzi.utilities.GPUtilities;
 
-public class GeopaparazziProjectListServlet
+/**
+ * 
+ * @author Falko Bräutigam
+ */
+public class GPProjectListServlet
         extends HttpServlet {
 
-    private static final Log log = LogFactory.getLog( GeopaparazziProjectListServlet.class );
+    private static final Log log = LogFactory.getLog( GPProjectListServlet.class );
 
     @Override
     protected void doGet( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException {
@@ -53,11 +58,11 @@ public class GeopaparazziProjectListServlet
         // StageWorkspace.getInstance().getGeopaparazziFolder(userPwd[0]);
 
         // TODO change this to be more solid and separated for users
-        File gpapProjectsFolder = GPUtilities.getGeopaparazziProjectsFolder();
+        File projectsFolder = GPUtilities.projectsFolder();
         response.setContentType( "text/json" );
         PrintWriter out = response.getWriter();
-        String projectsList = GeopaparazziUtilities.loadProjectsList( gpapProjectsFolder );
+        String projectsList = GeopaparazziUtilities.loadProjectsList( projectsFolder );
         out.write( projectsList );
-
     }
+
 }
