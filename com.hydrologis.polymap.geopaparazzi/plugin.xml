@@ -38,6 +38,10 @@
             class="com.hydrologis.polymap.geopaparazzi.FeaturePanelContribution"
             id="com.hydrologis.polymap.geopaparazzi.FeaturePanelContribution">
       </contributions>
+      <contributions
+            class="com.hydrologis.polymap.geopaparazzi.HelpContribution"
+            id="com.hydrologis.polymap.geopaparazzi.HelpContribution">
+      </contributions>
    </extension>
 
 </plugin>
